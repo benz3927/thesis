@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu May 25 11:16:36 2023
+
+@author: m1dcs04
+"""
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on April 27, 2022
+
+@author: m1dcs04
+
+Description: This script will parse each PDF transcript into an initial remarks
+and Q&A CSV that we can then perform frequency counts and textual analysis on
+for the FOMC transcripts.
+
+"""
+import os
+from bs4 import BeautifulSoup, NavigableString, Tag
+import requests
+import pandas as pd
+from tqdm import tqdm
+import re
+import string
+import numpy as np
+import glob
+import nltk
+import nameparser
+from nltk.corpus import stopwords
+import requests
+stopwords = set(stopwords.words('english'))
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
+
+
+# Parent path
+parent_path = '/if/research_ifs/fomc_transcript/'
+
+# HTML directory
+# HTML directory
+htmls_road = '/if/research_ifs/fomc_transcript/htmls/'
+htmls_ls = r'/if/research_ifs/fomc_transcript/htmls/*.html'
+html_files = glob.glob(htmls_ls)
+
+#CSV directory
+csv_road = '/if/research_ifs/fomc_transcript/data/processed/Transcripts/'
+csv_ls = r'/if/research_ifs/fomc_transcript/data/processed/Transcripts/*.csv'
+csv_files = glob.glob(csv_ls)
+###
+
+df_all = pd.DataFrame()
+df_all['file_names'] = csv_files
+
+
+
+#-----
+# Unique transcript name is the name of all presenters
+#Unique attendance is the name of all in attendance
+#Unique attendance - Unique presenter = attended but did not present
+
+presenters = []
+for i in np.arange(0,len(csv_files)):
+        data = pd.read_csv(csv_files[i])
+        speaker_count = len(data['Speaker'].unique())
+        presenters.append(speaker_count)
+df_all['Presenters'] = presenters
+
+
+
+#------attendance
+att_csv_road = '/if/research_ifs/fomc_transcript/data/processed/Attendees/'
+att_csv_ls = r'/if/research_ifs/fomc_transcript/data/processed/Attendees/*.csv'
+att_csv_files = glob.glob(att_csv_ls)
+
+attendees_count = []
+for i in np.arange(0,len(att_csv_files)):
+        data = pd.read_csv(att_csv_files[0])
+        attendees = len(data['Clean Names'].unique())
+        attendees_count.append(attendees)
+df_all['Attendees'] = attendees_count
+
+
+df_all['Attend_NOTpresent'] = df_all['Attendees'] - df_all['Presenters']
+
+new_att_n_p = []
+for i in np.arange(0,len(df_all['Attend_NOTpresent'])):
+    if df_all['Attend_NOTpresent'][i] < 10:
+        new_att_n_p.append(14)
+    elif df_all['Attend_NOTpresent'][i] == 10:
+        new_att_n_p.append(18)
+    else:
+        new_att_n_p.append(df_all['Attend_NOTpresent'][i])
+
+df_all['Attend_NOTpresent'] = new_att_n_p
+
+#-----------------Voters
+df_all = pd.read_csv('/if/research_ifs/fomc_transcript/output/basic_data.csv')
+voter_csv_road = '/if/research_ifs/fomc_transcript/data/processed/Voters/'
+voter_csv_ls = r'/if/research_ifs/fomc_transcript/data/processed/Voters/*.csv'
+voter_csv_files = glob.glob(voter_csv_ls)
+
+voters_count = []
+for i in np.arange(0,len(voter_csv_files)):
+        v_data = pd.read_csv(voter_csv_files[i])
+        voter_count = len(v_data['Voters'])
+        voters_count.append(voter_count)
+df_all['Voters'] = ''
+
+list_9 = [9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9]
+
+voters_count = voters_count + list_9
+df_all['Voters'] = voters_count
+
+df_all['Attending_NOT_Voting'] = df_all['Attendees'] - df_all['Voters']
+#--------------------------------------For Laughter
+data_laugh = pd.read_csv(csv_files[23])
+
+
+counts = data_laugh['clean_transcript_text'].value_counts()
+
+
+sum_laughs = []
+
+for i in np.arange(0,len(csv_files)):
+    laughs_count = []
+    data = pd.read_csv(csv_files[i])
+    data['clean_transcript_text'] = data['clean_transcript_text'].apply(str)
+    for i in np.arange(0, len(data['clean_transcript_text'])):
+        row_count= data['clean_transcript_text'][i].count('[Laughter]')
+        laughs_count.append(row_count)
+    sum_of_lc = sum(laughs_count)
+    sum_laughs.append(sum_of_lc)
+    
+df_all['Laughter_1'] = sum_laughs   
+ 
+ 
+ 
+sum_laughs_2 = []
+
+for i in np.arange(0,len(csv_files)):
+     laughs_count = []
+     data = pd.read_csv(csv_files[i])
+     data['clean_transcript_text'] = data['clean_transcript_text'].apply(str)
+     for i in np.arange(0, len(data['clean_transcript_text'])):
+         row_count= data['clean_transcript_text'][i].count('[laughter]')
+         laughs_count.append(row_count)
+     sum_of_lc = sum(laughs_count)
+     sum_laughs_2.append(sum_of_lc)
+     
+     
+df_all['Laughter_2'] = sum_laughs_2       
+
+
+df_all['Laughter'] = df_all['Laughter_1'] + df_all['Laughter_2']
+
+
+df_all = df_all.drop(['Laughter_1', 'Laughter_2'], axis=1)
+     
+     
+     
+     
+#Dummy for female chair
+#df_chair = pd.read_csv(csv_files[0])    
+     
+#df_chair['Speaker'][0:1].str.contains('YELLEN')
+   
+dummy_female_chair = []  
+for i in np.arange(0, len(csv_files)):
+    df_chair = pd.read_csv(csv_files[i])
+    row = df_chair['Speaker'][0:1]
+    if row.str.contains('YELLEN').bool() == True:
+         dummy_female_chair.append(1)
+    else:
+         dummy_female_chair.append(0)
+     
+df_all['fem_board_dummy'] = dummy_female_chair
+
+
+#---Dates
+dates = []  
+for i in np.arange(0, len(csv_files)):
+    csv_name = csv_files[i]
+    csv_name = csv_name[60:68]
+    csv_name = "-".join([csv_name[:4], csv_name[4:6], csv_name[6:]])
+    dates.append(csv_name)
+    
+     
+df_all['Date'] = dates
+
+
+#---
+
+
+
+
+df_all.to_csv("/if/research_ifs/fomc_transcript/output/basic_data.csv")
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     

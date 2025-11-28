@@ -1,0 +1,89 @@
+﻿Terms,Variable,Category,Group
+"greenbook, bluebook, tealbook, beigebook, redbook, teal, green, blue, beige",,,Prediction
+"short run, short-term, near-term, immediate",Short Run,Short,Time Frame
+long run,Long Run,Long,Time Frame
+"federal funds, fed funds",Federal Funds Rate,FFR,Target Tools
+reserves,Reserves,Reserve,Target Tools
+"monetary aggregates, money, M1, M1A, M1B, M2, M3, monetary base, velocity, cones, ranges",Monetary Aggregates,Monetary,Target Tools
+"euro, pound, yen, yuan, Canadian dollar, peso, lira, guilders, kroner, marks,
+schillings, currency, currencies",Foreign Currencies,Currency,Markets
+"dollar down, dollar decreases, decreasing dollar, declines in the dollar, weak dollar,
+weakening dollar, dollar depreciation, depreciating dollar, dollar to depreciate, lower
+dollar, downward pressure on the dollar",FX Dollar Down,Currency,Markets
+"dollar up, dollar increases, increasing dollar, increases in the dollar, strong dollar,
+strengthening dollar, dollar appreciation, appreciating dollar, dollar to appreciate,
+higher dollar, upward pressure on the dollar",FX Dollar Up,Currency,Markets
+"equity, stock market, S&P, NYSE, Dow Jones, Russell",Equity Markets,Currency,Markets
+"credit, bond, market yield curve",Credit Markets,Equity,Markets
+"GDP growth, economic growth, sustainable economic growth, production",Growth neutral,Credit,Markets
+"production down, production decreases, decreasing production, decreases in production,
+production to decrease, decelerate production, decelerating production, production
+falls, falling production, production to fall, low production, lower production,
+production below, less production, downward pressure on production, downside
+risk to production, risk of lower production, drag on production",Production down,Growth,Taylor Rule
+"production up, production increases, increasing production, increases in production,
+production to increase, accelerate production, accelerating production, production
+rises, rising production, production to rise, high production, higher production,
+production above, more production, upward pressure on production, upside risk to
+production, pick up in production",Production Up,Growth,Taylor Rule
+"economic growth down, economic growth decreases, decreasing economic growth,
+decreases in economic growth, economic growth to decrease, decelerate economic
+growth, decelerating economic growth, economic growth falls, falling economic
+growth, economic growth to fall, low economic growth, lower economic growth, economic
+growth below, less economic growth, downward pressure on economic growth,
+downside risk to economic growth, risk of lower economic growth, drag on economic
+growth",Growth down,Growth,Taylor Rule
+"economic growth up, economic growth increases, increasing economic growth, increases
+in economic growth, economic growth to increase, accelerate economic
+growth, accelerating economic growth, economic growth rises, rising economic
+growth, economic growth to rise, high economic growth, higher economic growth,
+economic growth above, more economic growth, upward pressure on economic
+growth, upside risk to economic growth, pick up in economic growth",Growth up,Growth,Taylor Rule
+"employment report, payroll, employment, private employment, employment statistics, full employment, maximum employment mandate",Employment neutral,Employment,Taylor Rule
+"unemployment down, unemployment decreases, decreasing unemployment, decreases
+in unemployment, unemployment rate to decrease, unemployment falls, falling unemployment,
+unemployment rate to fall, low unemployment, lower unemployment,
+unemployment below, less unemployment, is less than unemployment, decreased risk
+of unemployment, downside risk to unemployment, unemployment contraction",Unemployment down,Employment,Taylor Rule
+"unemployment up, unemployment increases, increasing unemployment, increases in
+unemployment, unemployment rate to increase, unemployment rises, rising unemployment,
+unemployment rate to rise, high unemployment, higher unemployment,
+unemployment above, more unemployment, is more than unemployment, increased
+risk of unemployment, unemployment risk, upside risk to unemployment, risk of
+higher unemployment, unemployment growth",Unemployment up,Employment,Taylor Rule
+"employment down, employment decreases, decreasing employment, decreases in employment,
+employment rate to decrease, employment falls, falling employment, employment
+rate to fall, low employment, lower employment, employment below, less
+employment, is less than employment, downside risk to employment, employment
+weakness, employment shrinks",Employ down,Employment,Taylor Rule
+"employment up, employment increases, increasing employment, increases in employment,
+employment rate to increase, employment rises, rising employment, employment
+rate to rise, high employment, higher employment, employment above, more
+employment, is more than employment, upside risk to employment, pick up in employment,
+employment strength, employment growth",Employ up,Employment,Taylor Rule
+"inflation expectations, inflation projections, actual inflation, inflation threshold, inflation
+outlook, price inflation",Inflation neutral,Inflation,Taylor Rule
+"wages down, wages decreases, decreasing wages, decreases in wages, wages to decrease,
+falling wages, wages to fall, low wages, lower wages, downward pressure on
+wages, downside risk to wages",wages down,Inflation,Taylor Rule
+"wages up, wage increases, increasing wages, increases in wages, wages to increase,
+rising wages, wages to rise, high wages, higher wages, upward pressure on wages,
+upside risk to wages, pick up in wages",wages up,Inflation,Taylor Rule
+"prices down, price decreases, decreasing prices, decreases in prices, prices to decrease,
+falling prices, prices to fall, low prices, lower prices, downward pressure on prices,
+downside risk to prices",prices down,Inflation,Taylor Rule
+"prices up, price increases, increasing prices, increases in prices, prices to increase,
+rising prices, prices to rise, high prices, higher prices, upward pressure on prices,
+upside risk to prices, risk of higher prices",prices up,Inflation,Taylor Rule
+"inflation down, inflation decreases, decreasing inflation, decreases in inflation, inflation
+rate to decrease, decelerate inflation, decelerating inflation, inflation falls,
+falling inflation, inflation rate to fall, low inflation, lower inflation, inflation below,
+less inflation, downward pressure on inflation, decreased risk of inflation, contained
+inflation, downside risk to inflation, deflation, wages down, decrease in wages, wage
+decreases, lower wages",Inflation down,Inflation,Taylor Rule
+"inflation up, inflation increases, increasing inflation, increases in inflation, inflation
+rate to increase, accelerate inflation, accelerating inflation, inflation rises, rising inflation,
+Inflation rate to rise, high inflation, higher inflation, inflation above, more
+inflation, upward pressure on inflation, increased risk of inflation, inflation risks, upside
+risk to inflation, risk of higher inflation, pick up in inflation, strong inflationary,
+wages up, increase in wages, wage increases, higher wages",Inflation up,Inflation,Taylor Rule

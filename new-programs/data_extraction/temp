@@ -1,0 +1,34 @@
+import re
+import csv
+from datetime import datetime
+
+# Sample raw text (replace this with the actual extracted text)
+with open('transcript.html', 'r') as f:
+    raw_text = f.read()
+
+# Meeting date (you can also extract this from the text using regex)
+meeting_date = "19760329"  # format YYYYMMDD
+
+# Regex to match lines like: "Mr. Burns, Chairman"
+pattern = re.compile(r'(Mr|Ms)\.?\s+([A-Z][a-zA-Z]+),\s+(.*)')
+
+participants = []
+
+for line in raw_text.splitlines():
+    match = pattern.match(line.strip())
+    if match:
+        greeting, last_name, position = match.groups()
+        participants.append({
+            'Clean Names': last_name,
+            'Greeting': greeting,
+            'Position': position.lower(),
+            'date': meeting_date
+        })
+
+# Write to CSV
+with open('participants_clean.csv', 'w', newline='') as f:
+    writer = csv.DictWriter(f, fieldnames=['Clean Names', 'Greeting', 'Position', 'date'])
+    writer.writeheader()
+    writer.writerows(participants)
+
+print("CSV created with participant data.")
