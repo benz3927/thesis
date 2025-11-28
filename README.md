@@ -1,5 +1,4 @@
-# fomc-transcript-2026  
-A repository to store code for Prof. Ann Owen's FOMC transcript dataset.
+# Thesis
 
 ---
 ## Package Installation
