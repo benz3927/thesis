@@ -14,6 +14,9 @@ pdfminer.six>=20221105
 
 # Machine learning and embeddings
 sentence-transformers>=2.2.0
+openai>=1.0.0
+scikit-learn>=1.3.0
+python-dotenv>=1.0.0
 
 # Data sources
 pandas-datareader>=0.10.0
