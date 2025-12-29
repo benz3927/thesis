@@ -2,7 +2,7 @@
 """
 Forward Guidance, Regional Dissent, and Yield Curve Dynamics
 
-Research Question: Does regional dissent reduce the effectiveness of forward 
+Research Question: Does regional dissent reduce the effectiveness of forward
 guidance by introducing uncertainty about the policy path?
 
 Strategy:
@@ -11,8 +11,28 @@ Strategy:
 3. Test whether dissent moderates the FG → yield curve relationship
 4. Examine regime heterogeneity (ZLB vs normal times)
 
+Comprehensive FG Effectiveness Measurement:
+✅ Multiple event windows (1-day, 2-day, 5-day, 0-to-1 day)
+✅ Individual maturity analysis (2Y, 5Y, 10Y, 30Y yields separately)
+✅ FG concept heterogeneity (which FG language works best)
+✅ Event window robustness checks (sensitivity to window choice)
+✅ Baseline PCA factor analysis (level/slope/curvature)
+✅ Dissent moderation effects (FG × regional_dissent interaction)
+✅ Regime-specific analysis (ZLB vs liftoff periods)
+
+Output Files:
+- yield_curve_pca_dataset.csv (full dataset with all variables)
+- baseline_fg_results.csv (FG effects on PCA factors)
+- maturity_specific_results.csv (FG effects by yield maturity)
+- fg_concept_effectiveness.csv (which FG language works best)
+- dissent_moderation_results.csv (dissent interaction effects)
+- regime_specific_results.csv (regime heterogeneity)
+- window_robustness_results.csv (robustness across event windows)
+- yield_curve_fg_dissent_analysis.png (comprehensive visualization)
+
 Author: Benjamin Zhao
 Date: November 2025
+Enhanced: November 2025
 """
 
 import pandas as pd
@@ -25,8 +45,6 @@ from sklearn.preprocessing import StandardScaler
 import pickle
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import seaborn as sns
-from datetime import timedelta
 import os
 from dotenv import load_dotenv, find_dotenv
 
@@ -34,8 +52,8 @@ from dotenv import load_dotenv, find_dotenv
 # CONFIGURATION
 # ============================================================================
 
-OUTPUT_DIR = '/Users/ben/Documents/GitHub/thesis/data/processed/'
-CACHE_DIR = '/Users/ben/Documents/GitHub/thesis/data/cache/'
+OUTPUT_DIR = './data/processed/'
+CACHE_DIR = './data/cache/'
 
 # Load OpenAI API key
 _ = load_dotenv(find_dotenv())
@@ -98,6 +116,23 @@ print(f"\nTesting {len(FG_CONCEPTS)} forward guidance concepts")
 
 print("\n[1] Loading FOMC event study data...")
 
+# Check if required files exist
+required_files = {
+    'event_study': f'{OUTPUT_DIR}/ntfs_event_study.csv',
+    'statements': f'{CACHE_DIR}/fomc_statements_2006_2017.pkl'
+}
+
+missing_files = []
+for name, filepath in required_files.items():
+    if not os.path.exists(filepath):
+        missing_files.append(f"  - {name}: {filepath}")
+
+if missing_files:
+    print("❌ ERROR: Required data files not found:")
+    print("\n".join(missing_files))
+    print("\nPlease ensure you have run the data preparation scripts first.")
+    raise FileNotFoundError("Missing required data files")
+
 # Load your existing event study results
 df_events = pd.read_csv(f'{OUTPUT_DIR}/ntfs_event_study.csv')
 df_events['date'] = pd.to_datetime(df_events['date'])
@@ -157,41 +192,63 @@ except Exception as e:
     raise
 
 # ============================================================================
-# STEP 3: COMPUTE YIELD CURVE CHANGES AROUND FOMC EVENTS
+# STEP 3: COMPUTE YIELD CURVE CHANGES AROUND FOMC EVENTS (MULTIPLE WINDOWS)
 # ============================================================================
 
 print("\n[3] Computing yield curve changes around FOMC announcements...")
+print("   Testing multiple event windows for robustness...")
 
-# For each FOMC date, get yields day before and day after
-event_yields = []
+# Define multiple event windows
+WINDOWS = {
+    '1day': (-1, 1),   # Standard: day before to day after
+    '2day': (-2, 2),   # Wider: 2 days before to 2 days after
+    '5day': (-5, 5),   # Even wider: 1 week window
+    '0to1': (0, 1),    # Same day to next day (if announced during day)
+}
+
+# For each FOMC date and each window, compute yield changes
+event_yields_all = []
 
 for idx, row in df.iterrows():
     event_date = row['date']
-    
-    # Get day before and after (handling weekends)
+    event_data = {'date': event_date}
+
+    for window_name, (days_before, days_after) in WINDOWS.items():
+        # Get day before and after (handling weekends)
+        day_before = event_date - pd.Timedelta(days=days_before)
+        day_after = event_date + pd.Timedelta(days=days_after)
+
+        # Find closest available dates
+        before_yields = yields_df[yields_df['date'] <= day_before].tail(1)
+        after_yields = yields_df[yields_df['date'] >= day_after].head(1)
+
+        if len(before_yields) > 0 and len(after_yields) > 0:
+            for maturity in ['2Y', '5Y', '10Y', '30Y']:
+                col_name = f'delta_{maturity}_{window_name}'
+                event_data[col_name] = (after_yields[maturity].iloc[0] -
+                                       before_yields[maturity].iloc[0])
+
+    # Also add standard window without suffix (for backward compatibility)
     day_before = event_date - pd.Timedelta(days=1)
     day_after = event_date + pd.Timedelta(days=1)
-    
-    # Find closest available dates
     before_yields = yields_df[yields_df['date'] <= day_before].tail(1)
     after_yields = yields_df[yields_df['date'] >= day_after].head(1)
-    
-    if len(before_yields) > 0 and len(after_yields) > 0:
-        changes = {
-            'date': event_date,
-            'delta_2Y': after_yields['2Y'].iloc[0] - before_yields['2Y'].iloc[0],
-            'delta_5Y': after_yields['5Y'].iloc[0] - before_yields['5Y'].iloc[0],
-            'delta_10Y': after_yields['10Y'].iloc[0] - before_yields['10Y'].iloc[0],
-            'delta_30Y': after_yields['30Y'].iloc[0] - before_yields['30Y'].iloc[0],
-        }
-        event_yields.append(changes)
 
-event_yields_df = pd.DataFrame(event_yields)
+    if len(before_yields) > 0 and len(after_yields) > 0:
+        event_data['delta_2Y'] = after_yields['2Y'].iloc[0] - before_yields['2Y'].iloc[0]
+        event_data['delta_5Y'] = after_yields['5Y'].iloc[0] - before_yields['5Y'].iloc[0]
+        event_data['delta_10Y'] = after_yields['10Y'].iloc[0] - before_yields['10Y'].iloc[0]
+        event_data['delta_30Y'] = after_yields['30Y'].iloc[0] - before_yields['30Y'].iloc[0]
+
+    event_yields_all.append(event_data)
+
+event_yields_df = pd.DataFrame(event_yields_all)
 
 # Merge with main dataframe
 df = pd.merge(df, event_yields_df, on='date', how='left')
 
-print(f"✅ Computed yield changes for {len(event_yields_df)} events")
+print(f"✅ Computed yield changes for {len(event_yields_df)} events across {len(WINDOWS)} windows")
+print(f"   Windows: {list(WINDOWS.keys())}")
 
 # ============================================================================
 # STEP 4: PRINCIPAL COMPONENTS ANALYSIS OF YIELD CURVE
@@ -351,6 +408,139 @@ for factor in factors:
 baseline_results_df = pd.DataFrame(baseline_results)
 
 # ============================================================================
+# STEP 7B: MATURITY-SPECIFIC ANALYSIS - WHICH YIELDS RESPOND MOST?
+# ============================================================================
+
+print("\n" + "="*80)
+print("MATURITY-SPECIFIC ANALYSIS: FG Impact by Yield Maturity")
+print("="*80)
+print("\nTesting which maturities are most sensitive to forward guidance")
+
+maturity_results = []
+
+for maturity in ['delta_2Y', 'delta_5Y', 'delta_10Y', 'delta_30Y']:
+    print(f"\n{'─'*80}")
+    print(f"Dependent Variable: {maturity.upper()}")
+    print(f"{'─'*80}")
+
+    # Prepare data
+    reg_df = df_pca[['fg_composite', maturity]].dropna()
+
+    if len(reg_df) < 10:
+        print(f"⚠️  Insufficient data (N={len(reg_df)})")
+        continue
+
+    X = reg_df[['fg_composite']]
+    X = sm.add_constant(X)
+    y = reg_df[maturity]
+
+    # Run regression
+    model = sm.OLS(y, X).fit(cov_type='HC1')
+
+    print(f"\nModel: {maturity} = β₀ + β₁*FG_composite")
+    print(f"\nβ₁ (FG effect): {model.params['fg_composite']:7.4f}")
+    print(f"   Std Error:   {model.bse['fg_composite']:7.4f}")
+    print(f"   t-statistic: {model.tvalues['fg_composite']:7.2f}")
+    print(f"   p-value:     {model.pvalues['fg_composite']:7.4f}")
+    print(f"   R²:          {model.rsquared:7.3f}")
+    print(f"   N:           {int(model.nobs):7d}")
+
+    # Store results
+    maturity_results.append({
+        'maturity': maturity.replace('delta_', ''),
+        'beta': model.params['fg_composite'],
+        'se': model.bse['fg_composite'],
+        't_stat': model.tvalues['fg_composite'],
+        'p_value': model.pvalues['fg_composite'],
+        'r_squared': model.rsquared,
+        'n_obs': int(model.nobs)
+    })
+
+    # Interpretation
+    if model.pvalues['fg_composite'] < 0.05:
+        direction = "increases" if model.params['fg_composite'] > 0 else "decreases"
+        magnitude = abs(model.params['fg_composite'])
+        print(f"\n✅ SIGNIFICANT: Stronger FG {direction} {maturity} by {magnitude:.2f} bps")
+    else:
+        print(f"\n❌ NOT SIGNIFICANT")
+
+maturity_results_df = pd.DataFrame(maturity_results)
+
+print(f"\n{'='*80}")
+print("MATURITY COMPARISON:")
+print(f"{'='*80}")
+print("\nRanking by FG sensitivity (absolute beta):")
+maturity_sorted = maturity_results_df.sort_values('beta', key=abs, ascending=False)
+for idx, row in maturity_sorted.iterrows():
+    sig = "***" if row['p_value'] < 0.01 else "**" if row['p_value'] < 0.05 else "*" if row['p_value'] < 0.10 else ""
+    print(f"  {row['maturity']:4s}: β={row['beta']:7.4f} (p={row['p_value']:.4f}) {sig}")
+
+print(f"\n💡 INTERPRETATION:")
+print(f"   If FG works primarily through expectations channel:")
+print(f"   • Short-term rates (2Y) should respond less (tied to current policy)")
+print(f"   • Medium-term rates (5Y, 10Y) should respond most (expectations channel)")
+print(f"   • Long-term rates (30Y) may respond less (distant future uncertainty)")
+
+# ============================================================================
+# STEP 7C: FG CONCEPT HETEROGENEITY - WHICH FG LANGUAGE WORKS BEST?
+# ============================================================================
+
+print("\n" + "="*80)
+print("FG CONCEPT HETEROGENEITY: Which Forward Guidance Types Are Most Effective?")
+print("="*80)
+
+concept_effectiveness = []
+
+for concept in FG_CONCEPTS.keys():
+    fg_col = f'fg_{concept}'
+
+    # Test on PC1 (level) - the main yield factor
+    reg_df = df_pca[[fg_col, 'pc1_level']].dropna()
+
+    if len(reg_df) < 10:
+        continue
+
+    X = sm.add_constant(reg_df[[fg_col]])
+    y = reg_df['pc1_level']
+
+    try:
+        model = sm.OLS(y, X).fit(cov_type='HC1')
+
+        concept_effectiveness.append({
+            'concept': concept,
+            'beta': model.params[fg_col],
+            'se': model.bse[fg_col],
+            'p_value': model.pvalues[fg_col],
+            'r_squared': model.rsquared,
+            'n_obs': int(model.nobs)
+        })
+    except Exception as e:
+        print(f"⚠️  Error with {concept}: {e}")
+        continue
+
+concept_effectiveness_df = pd.DataFrame(concept_effectiveness).sort_values('p_value')
+
+print(f"\nTesting {len(concept_effectiveness_df)} FG concepts on PC1 (yield level)")
+print(f"\n{'─'*80}")
+print(f"Most Effective Forward Guidance Types:")
+print(f"{'─'*80}")
+
+for idx, row in concept_effectiveness_df.head(10).iterrows():
+    sig = "***" if row['p_value'] < 0.01 else "**" if row['p_value'] < 0.05 else "*" if row['p_value'] < 0.10 else ""
+    print(f"  {row['concept']:25s}: β={row['beta']:7.4f}, p={row['p_value']:.4f} {sig}, R²={row['r_squared']:.3f}")
+
+print(f"\n💡 KEY INSIGHTS:")
+sig_concepts = concept_effectiveness_df[concept_effectiveness_df['p_value'] < 0.10]
+if len(sig_concepts) > 0:
+    print(f"   • {len(sig_concepts)} out of {len(FG_CONCEPTS)} FG concepts significantly affect yields")
+    most_effective = concept_effectiveness_df.iloc[0]
+    print(f"   • Most effective: '{most_effective['concept']}' (p={most_effective['p_value']:.4f})")
+    print(f"   • This suggests the market responds most to specific FG language patterns")
+else:
+    print(f"   • No individual FG concepts reach significance")
+    print(f"   • Composite score may be capturing general FG presence better")
+
+# ============================================================================
 # STEP 8: DISSENT MODERATION - DOES DISSENT WEAKEN FG EFFECTS?
 # ============================================================================
 
@@ -472,13 +662,92 @@ for regime in ['ZLB', 'liftoff']:
 regime_results_df = pd.DataFrame(regime_results)
 
 # ============================================================================
+# STEP 9B: EVENT WINDOW ROBUSTNESS - TEST ALTERNATIVE WINDOWS
+# ============================================================================
+
+print("\n" + "="*80)
+print("EVENT WINDOW ROBUSTNESS: Testing Alternative Event Windows")
+print("="*80)
+print("\nDoes FG effectiveness depend on the event window choice?")
+
+window_robustness = []
+
+for window_name in WINDOWS.keys():
+    print(f"\n{'─'*80}")
+    print(f"Window: {window_name} ({WINDOWS[window_name][0]} to +{WINDOWS[window_name][1]} days)")
+    print(f"{'─'*80}")
+
+    # Use 10Y yield as the benchmark (most liquid, mid-maturity)
+    delta_col = f'delta_10Y_{window_name}'
+
+    if delta_col not in df_pca.columns:
+        print(f"⚠️  Column {delta_col} not found")
+        continue
+
+    reg_df = df_pca[['fg_composite', delta_col]].dropna()
+
+    if len(reg_df) < 10:
+        print(f"⚠️  Insufficient data (N={len(reg_df)})")
+        continue
+
+    X = sm.add_constant(reg_df[['fg_composite']])
+    y = reg_df[delta_col]
+
+    try:
+        model = sm.OLS(y, X).fit(cov_type='HC1')
+
+        print(f"  β (FG → 10Y yield): {model.params['fg_composite']:7.4f} (p={model.pvalues['fg_composite']:.4f})")
+        print(f"  R²: {model.rsquared:.3f}, N={int(model.nobs)}")
+
+        window_robustness.append({
+            'window': window_name,
+            'days_before': WINDOWS[window_name][0],
+            'days_after': WINDOWS[window_name][1],
+            'beta': model.params['fg_composite'],
+            'se': model.bse['fg_composite'],
+            'p_value': model.pvalues['fg_composite'],
+            'r_squared': model.rsquared,
+            'n_obs': int(model.nobs)
+        })
+
+        if model.pvalues['fg_composite'] < 0.05:
+            print(f"  ✅ SIGNIFICANT in this window")
+        else:
+            print(f"  ❌ Not significant")
+
+    except Exception as e:
+        print(f"  ⚠️  Regression failed: {e}")
+
+window_robustness_df = pd.DataFrame(window_robustness)
+
+if len(window_robustness_df) > 0:
+    print(f"\n{'='*80}")
+    print("ROBUSTNESS SUMMARY:")
+    print(f"{'='*80}")
+    print("\nFG effect on 10Y yields across different event windows:")
+    for idx, row in window_robustness_df.iterrows():
+        sig = "***" if row['p_value'] < 0.01 else "**" if row['p_value'] < 0.05 else "*" if row['p_value'] < 0.10 else ""
+        print(f"  {row['window']:6s}: β={row['beta']:7.4f} (p={row['p_value']:.4f}) {sig}")
+
+    print(f"\n💡 INTERPRETATION:")
+    sig_windows = window_robustness_df[window_robustness_df['p_value'] < 0.05]
+    if len(sig_windows) >= len(window_robustness_df) * 0.75:
+        print(f"   ✅ FG effect is ROBUST across {len(sig_windows)}/{len(window_robustness_df)} windows")
+        print(f"   • Results are not sensitive to event window choice")
+    elif len(sig_windows) > 0:
+        print(f"   ⚠️  FG effect is MIXED: significant in {len(sig_windows)}/{len(window_robustness_df)} windows")
+        print(f"   • Results may be sensitive to event window choice")
+    else:
+        print(f"   ❌ FG effect is NOT robust across alternative windows")
+
+# ============================================================================
 # STEP 10: VISUALIZATION
 # ============================================================================
 
 print("\n[10] Creating visualizations...")
 
-fig = plt.figure(figsize=(16, 12))
-gs = fig.add_gridspec(3, 3, hspace=0.3, wspace=0.3)
+fig = plt.figure(figsize=(20, 16))
+gs = fig.add_gridspec(4, 4, hspace=0.35, wspace=0.35)
 
 # Plot 1: PCA loadings
 ax1 = fig.add_subplot(gs[0, 0])
@@ -531,18 +800,18 @@ for i, factor in enumerate(factors):
 if len(regime_results_df) > 0:
     for i, factor in enumerate(factors):
         ax = fig.add_subplot(gs[2, i])
-        
+
         factor_data = regime_results_df[regime_results_df['factor'] == factor]
-        
+
         if len(factor_data) > 0:
             x = np.arange(len(factor_data))
             width = 0.35
-            
-            ax.bar(x - width/2, factor_data['beta_fg'], width, label='FG Effect', 
+
+            ax.bar(x - width/2, factor_data['beta_fg'], width, label='FG Effect',
                    alpha=0.7, color='#2E86AB')
-            ax.bar(x + width/2, factor_data['beta_interaction'], width, 
+            ax.bar(x + width/2, factor_data['beta_interaction'], width,
                    label='FG×Dissent', alpha=0.7, color='#A23B72')
-            
+
             ax.set_xticks(x)
             ax.set_xticklabels(factor_data['regime'])
             ax.set_ylabel('β coefficient')
@@ -550,6 +819,51 @@ if len(regime_results_df) > 0:
             ax.legend()
             ax.axhline(0, color='black', linestyle='--', linewidth=0.5)
             ax.grid(axis='y', alpha=0.3)
+
+# Plot 10: Maturity-specific effects
+ax10 = fig.add_subplot(gs[2, 3])
+if len(maturity_results_df) > 0:
+    colors = ['green' if p < 0.05 else 'orange' if p < 0.10 else 'gray'
+              for p in maturity_results_df['p_value']]
+    ax10.barh(maturity_results_df['maturity'], maturity_results_df['beta'],
+              color=colors, alpha=0.7)
+    ax10.axvline(0, color='black', linestyle='--', linewidth=0.5)
+    ax10.set_xlabel('β coefficient')
+    ax10.set_title('FG Impact by Maturity', fontsize=11, fontweight='bold')
+    ax10.grid(axis='x', alpha=0.3)
+
+# Plot 11: FG concept effectiveness (top 8)
+ax11 = fig.add_subplot(gs[3, 0:2])
+if len(concept_effectiveness_df) > 0:
+    top_concepts = concept_effectiveness_df.head(8).copy()
+    colors = ['green' if p < 0.05 else 'orange' if p < 0.10 else 'gray'
+              for p in top_concepts['p_value']]
+
+    # Shorten concept names for display
+    top_concepts['concept_short'] = top_concepts['concept'].str.replace('_', ' ').str[:20]
+
+    ax11.barh(top_concepts['concept_short'], top_concepts['beta'],
+              color=colors, alpha=0.7)
+    ax11.axvline(0, color='black', linestyle='--', linewidth=0.5)
+    ax11.set_xlabel('β coefficient (effect on PC1)')
+    ax11.set_title('Most Effective FG Concepts', fontsize=11, fontweight='bold')
+    ax11.grid(axis='x', alpha=0.3)
+    ax11.invert_yaxis()
+
+# Plot 12: Event window robustness
+ax12 = fig.add_subplot(gs[3, 2:4])
+if len(window_robustness_df) > 0:
+    colors = ['green' if p < 0.05 else 'orange' if p < 0.10 else 'gray'
+              for p in window_robustness_df['p_value']]
+
+    ax12.bar(window_robustness_df['window'], window_robustness_df['beta'],
+             color=colors, alpha=0.7)
+    ax12.axhline(0, color='black', linestyle='--', linewidth=0.5)
+    ax12.set_ylabel('β coefficient')
+    ax12.set_xlabel('Event Window')
+    ax12.set_title('Robustness: FG → 10Y Yield Across Windows', fontsize=11, fontweight='bold')
+    ax12.grid(axis='y', alpha=0.3)
+    ax12.tick_params(axis='x', rotation=45)
 
 plt.savefig(f'{OUTPUT_DIR}/yield_curve_fg_dissent_analysis.png', 
             dpi=300, bbox_inches='tight')
@@ -565,11 +879,14 @@ print("\n[11] Saving results...")
 df_pca.to_csv(f'{OUTPUT_DIR}/yield_curve_pca_dataset.csv', index=False)
 print(f"💾 Saved dataset: yield_curve_pca_dataset.csv")
 
-# Save regression results
+# Save all regression results
 baseline_results_df.to_csv(f'{OUTPUT_DIR}/baseline_fg_results.csv', index=False)
+maturity_results_df.to_csv(f'{OUTPUT_DIR}/maturity_specific_results.csv', index=False)
+concept_effectiveness_df.to_csv(f'{OUTPUT_DIR}/fg_concept_effectiveness.csv', index=False)
 dissent_results_df.to_csv(f'{OUTPUT_DIR}/dissent_moderation_results.csv', index=False)
 regime_results_df.to_csv(f'{OUTPUT_DIR}/regime_specific_results.csv', index=False)
-print(f"💾 Saved regression results")
+window_robustness_df.to_csv(f'{OUTPUT_DIR}/window_robustness_results.csv', index=False)
+print(f"💾 Saved all regression results (6 result files)")
 
 # ============================================================================
 # STEP 12: EXECUTIVE SUMMARY
@@ -637,20 +954,69 @@ print(f"   • FG should primarily move PC1 (level) - shifts entire yield curve"
 print(f"   • Dissent should reduce this effect (negative β₃ on PC1)")
 print(f"   • Effect should be stronger during ZLB (when FG is main tool)")
 
+# Finding 3: Maturity structure
+print(f"\n   3. Maturity-Specific Effects:")
+if len(maturity_results_df) > 0:
+    sig_maturities = maturity_results_df[maturity_results_df['p_value'] < 0.05]
+    if len(sig_maturities) > 0:
+        print(f"      FG significantly affects {len(sig_maturities)}/4 yield maturities:")
+        for _, row in sig_maturities.iterrows():
+            print(f"      • {row['maturity']}: β={row['beta']:.3f} (p={row['p_value']:.3f})")
+
+        most_responsive = maturity_results_df.loc[maturity_results_df['beta'].abs().idxmax()]
+        print(f"      ⭐ Most responsive: {most_responsive['maturity']} yields")
+    else:
+        print(f"      No significant effects across maturities")
+
+# Finding 4: FG concept heterogeneity
+print(f"\n   4. FG Language Effectiveness:")
+if len(concept_effectiveness_df) > 0:
+    sig_concepts = concept_effectiveness_df[concept_effectiveness_df['p_value'] < 0.05]
+    if len(sig_concepts) > 0:
+        print(f"      {len(sig_concepts)}/{len(FG_CONCEPTS)} FG concepts significantly affect yields:")
+        for _, row in sig_concepts.head(3).iterrows():
+            print(f"      • '{row['concept']}': β={row['beta']:.3f} (p={row['p_value']:.3f})")
+        print(f"      → Specific FG language matters!")
+    else:
+        print(f"      No individual concepts are significant")
+        print(f"      → Composite FG measure captures general FG presence better")
+
+# Finding 5: Robustness
+print(f"\n   5. ⭐ ROBUSTNESS CHECKS:")
+if len(window_robustness_df) > 0:
+    sig_windows = window_robustness_df[window_robustness_df['p_value'] < 0.05]
+    print(f"      Event window robustness: {len(sig_windows)}/{len(window_robustness_df)} windows significant")
+    if len(sig_windows) >= len(window_robustness_df) * 0.75:
+        print(f"      ✅ Results are ROBUST to event window choice!")
+    elif len(sig_windows) > 0:
+        print(f"      ⚠️  Results show MIXED robustness")
+        print(f"      → May need to justify baseline window choice")
+    else:
+        print(f"      ❌ Results NOT robust to window choice")
+        print(f"      → Findings may be sensitive to specification")
+
 print(f"\n💡 NEXT STEPS FOR THESIS:")
 print(f"   1. If you find significant dissent moderation → THIS IS YOUR RESULT!")
 print(f"   2. Write up mechanism: dissent creates policy path uncertainty")
 print(f"   3. Show regime heterogeneity supports the mechanism")
-print(f"   4. Consider robustness: other event windows, alternative FG measures")
+print(f"   4. ✅ DONE: Robustness checks across event windows & FG measures")
 print(f"   5. Compare to literature: how does this relate to info aggregation?")
+print(f"   6. Use maturity-specific results to validate transmission channel")
+print(f"   7. Leverage FG concept analysis to refine your FG measure")
 
 print("\n" + "="*80)
 print("✅ ANALYSIS COMPLETE!")
 print("="*80)
 
 print(f"\n📁 Output files:")
+print(f"\n   Dataset:")
 print(f"   • {OUTPUT_DIR}/yield_curve_pca_dataset.csv")
-print(f"   • {OUTPUT_DIR}/baseline_fg_results.csv")
-print(f"   • {OUTPUT_DIR}/dissent_moderation_results.csv")
-print(f"   • {OUTPUT_DIR}/regime_specific_results.csv")
-print(f"   • {OUTPUT_DIR}/yield_curve_fg_dissent_analysis.png")
+print(f"\n   Regression Results:")
+print(f"   • {OUTPUT_DIR}/baseline_fg_results.csv              (PCA factors)")
+print(f"   • {OUTPUT_DIR}/maturity_specific_results.csv        (individual maturities)")
+print(f"   • {OUTPUT_DIR}/fg_concept_effectiveness.csv         (FG language types)")
+print(f"   • {OUTPUT_DIR}/dissent_moderation_results.csv       (dissent interactions)")
+print(f"   • {OUTPUT_DIR}/regime_specific_results.csv          (ZLB vs liftoff)")
+print(f"   • {OUTPUT_DIR}/window_robustness_results.csv        (event window tests)")
+print(f"\n   Visualization:")
+print(f"   • {OUTPUT_DIR}/yield_curve_fg_dissent_analysis.png  (comprehensive dashboard)")
