@@ -78,11 +78,7 @@ def get_embedding(text, model="text-embedding-3-small"):
 print("\n[1] Loading data...")
 
 # Load transcript data with speaker-level information
-# This assumes you have a dataset with: date, speaker, text, district, is_dissent
-# You'll need to adjust based on your actual data structure
-
 try:
-    # Try loading speaker-level transcript data
     with open(f'{CACHE_DIR}/fomc_transcripts_speakers.pkl', 'rb') as f:
         transcripts_df = pickle.load(f)
     print(f"✅ Loaded {len(transcripts_df)} speaker turns from transcripts")
@@ -93,7 +89,6 @@ except:
     raise
 
 # Load regional unemployment data
-# Format: date, district, unemployment_rate
 try:
     regional_unemp = pd.read_csv(f'{CACHE_DIR}/regional_unemployment.csv')
     regional_unemp['date'] = pd.to_datetime(regional_unemp['date'])
@@ -104,29 +99,51 @@ except:
     print("    Columns needed: date, district, unemployment_rate")
     raise
 
-# FIX: Drop unemployment_rate from transcripts if it exists to avoid merge conflicts
+# Diagnostic: Check date ranges before merge
+print(f"\n🔍 Pre-merge diagnostics:")
+print(f"   Transcript dates: {transcripts_df['date'].min()} to {transcripts_df['date'].max()}")
+print(f"   Unemployment dates: {regional_unemp['date'].min()} to {regional_unemp['date'].max()}")
+print(f"   Transcript districts: {sorted(transcripts_df['district'].unique())}")
+print(f"   Unemployment districts: {sorted(regional_unemp['district'].unique())}")
+
+# FIX 1: Drop unemployment_rate from transcripts if it exists
 if 'unemployment_rate' in transcripts_df.columns:
     transcripts_df = transcripts_df.drop('unemployment_rate', axis=1)
     print("✅ Dropped existing unemployment_rate column from transcripts")
 
-# Merge datasets
-df = pd.merge(transcripts_df, regional_unemp, on=['date', 'district'], how='left')
+# FIX 2: Create year-month keys for better merge coverage
+# Check if year_month already exists in transcripts
+if 'year_month' not in transcripts_df.columns:
+    transcripts_df['year_month'] = transcripts_df['date'].dt.to_period('M')
+    print("✅ Created year_month column in transcripts")
 
-# Debug: Check if unemployment_rate column exists after merge
-print(f"\n📊 Columns after merge: {df.columns.tolist()}")
-print(f"📊 Sample merged data:\n{df[['date', 'district', 'speaker']].head()}")
-if 'unemployment_rate' in df.columns:
-    print(f"📊 Unemployment rate: {df['unemployment_rate'].describe()}")
-    print(f"📊 Missing unemployment_rate: {df['unemployment_rate'].isna().sum()} / {len(df)}")
-else:
-    print("⚠️  WARNING: unemployment_rate column missing after merge!")
-    print(f"📊 Unique districts in transcripts: {transcripts_df['district'].unique()}")
-    print(f"📊 Unique districts in unemployment: {regional_unemp['district'].unique()}")
+regional_unemp['year_month'] = regional_unemp['date'].dt.to_period('M')
+print("✅ Created year_month column in unemployment data")
+
+# Merge on year-month and district (more forgiving than exact date match)
+df = pd.merge(transcripts_df, 
+              regional_unemp[['year_month', 'district', 'unemployment_rate']], 
+              on=['year_month', 'district'], 
+              how='left')
+
+# FIX 3: Convert is_dissent to integer for logistic regression
+df['is_dissent'] = df['is_dissent'].astype(int)
+print("✅ Converted is_dissent to integer (0/1)")
+
+# Debug: Check merge results
+print(f"\n📊 Post-merge diagnostics:")
+print(f"   Total rows after merge: {len(df)}")
+print(f"   Rows with unemployment_rate: {df['unemployment_rate'].notna().sum()}")
+print(f"   Missing unemployment_rate: {df['unemployment_rate'].isna().sum()}")
+if df['unemployment_rate'].notna().sum() > 0:
+    print(f"   Unemployment rate range: {df['unemployment_rate'].min():.1f}% to {df['unemployment_rate'].max():.1f}%")
+    print(f"   Mean unemployment rate: {df['unemployment_rate'].mean():.1f}%")
 
 # Filter to only Regional Bank Presidents
 bank_presidents = df[df['is_bank_president'] == True].copy()
 
 print(f"\n✅ Working with {len(bank_presidents)} statements from Regional Bank Presidents")
+print(f"   Statements with unemployment data: {bank_presidents['unemployment_rate'].notna().sum()}")
 print(f"   Unique speakers: {bank_presidents['speaker'].nunique()}")
 print(f"   Date range: {bank_presidents['date'].min()} to {bank_presidents['date'].max()}")
 
@@ -227,6 +244,8 @@ analysis_df = speaker_meeting.dropna(subset=['unemployment_discussion_score',
                                               'unemployment_rate'])
 
 print(f"✅ {len(analysis_df)} speaker-meeting observations for analysis")
+print(f"   Date range: {analysis_df['date'].min()} to {analysis_df['date'].max()}")
+print(f"   Unemployment range: {analysis_df['unemployment_rate'].min():.1f}% to {analysis_df['unemployment_rate'].max():.1f}%")
 
 # ============================================================================
 # ANALYSIS 1: DOES REGIONAL UNEMPLOYMENT PREDICT UNEMPLOYMENT DISCUSSION?
