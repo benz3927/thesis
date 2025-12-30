@@ -8,7 +8,7 @@ Uses semantic embeddings to measure:
 2. Whether speakers from high-unemployment regions dissent more
 3. Interaction between regional conditions and dissent behavior
 
-Author: Max
+Author: Benjamin Zhao
 Date: November 2025
 """
 
