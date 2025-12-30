@@ -104,13 +104,29 @@ except:
     print("    Columns needed: date, district, unemployment_rate")
     raise
 
+# FIX: Drop unemployment_rate from transcripts if it exists to avoid merge conflicts
+if 'unemployment_rate' in transcripts_df.columns:
+    transcripts_df = transcripts_df.drop('unemployment_rate', axis=1)
+    print("✅ Dropped existing unemployment_rate column from transcripts")
+
 # Merge datasets
 df = pd.merge(transcripts_df, regional_unemp, on=['date', 'district'], how='left')
+
+# Debug: Check if unemployment_rate column exists after merge
+print(f"\n📊 Columns after merge: {df.columns.tolist()}")
+print(f"📊 Sample merged data:\n{df[['date', 'district', 'speaker']].head()}")
+if 'unemployment_rate' in df.columns:
+    print(f"📊 Unemployment rate: {df['unemployment_rate'].describe()}")
+    print(f"📊 Missing unemployment_rate: {df['unemployment_rate'].isna().sum()} / {len(df)}")
+else:
+    print("⚠️  WARNING: unemployment_rate column missing after merge!")
+    print(f"📊 Unique districts in transcripts: {transcripts_df['district'].unique()}")
+    print(f"📊 Unique districts in unemployment: {regional_unemp['district'].unique()}")
 
 # Filter to only Regional Bank Presidents
 bank_presidents = df[df['is_bank_president'] == True].copy()
 
-print(f"✅ Working with {len(bank_presidents)} statements from Regional Bank Presidents")
+print(f"\n✅ Working with {len(bank_presidents)} statements from Regional Bank Presidents")
 print(f"   Unique speakers: {bank_presidents['speaker'].nunique()}")
 print(f"   Date range: {bank_presidents['date'].min()} to {bank_presidents['date'].max()}")
 
@@ -120,50 +136,74 @@ print(f"   Date range: {bank_presidents['date'].min()} to {bank_presidents['date
 
 print("\n[2] Computing semantic embeddings...")
 
-# Get embeddings for concept anchors
-print("\n   Encoding unemployment concepts...")
-unemp_embeddings = {}
-for concept, text in UNEMPLOYMENT_CONCEPTS.items():
-    unemp_embeddings[concept] = get_embedding(text)
-    
-print("   Encoding dissent concepts...")
-dissent_embeddings = {}
-for concept, text in DISSENT_CONCEPTS.items():
-    dissent_embeddings[concept] = get_embedding(text)
+# Check if cached embeddings exist
+embeddings_cache_file = f'{CACHE_DIR}/semantic_scores_cache.pkl'
 
-# Compute similarity scores for each speaker turn
-print("\n   Scoring speaker statements...")
+if os.path.exists(embeddings_cache_file):
+    print("\n   📦 Loading cached semantic scores...")
+    with open(embeddings_cache_file, 'rb') as f:
+        cached_scores = pickle.load(f)
 
-unemp_scores = []
-dissent_scores = []
+    bank_presidents['unemployment_discussion_score'] = cached_scores['unemployment_discussion_score']
+    bank_presidents['dissent_tone_score'] = cached_scores['dissent_tone_score']
+    print(f"✅ Loaded cached scores for {len(bank_presidents)} statements")
 
-for idx, row in tqdm(bank_presidents.iterrows(), total=len(bank_presidents)):
-    if pd.isna(row['text']) or len(row['text']) < 50:
-        unemp_scores.append(np.nan)
-        dissent_scores.append(np.nan)
-        continue
-    
-    # Get embedding for this statement
-    statement_emb = get_embedding(row['text'])
-    
-    # Compute average similarity to unemployment concepts
-    unemp_sims = []
-    for concept_emb in unemp_embeddings.values():
-        sim = 1 - cosine(statement_emb, concept_emb)
-        unemp_sims.append(sim)
-    unemp_scores.append(np.mean(unemp_sims))
-    
-    # Compute average similarity to dissent concepts
-    dissent_sims = []
-    for concept_emb in dissent_embeddings.values():
-        sim = 1 - cosine(statement_emb, concept_emb)
-        dissent_sims.append(sim)
-    dissent_scores.append(np.mean(dissent_sims))
+else:
+    print("\n   🔄 Computing new embeddings (this will be cached for future runs)...")
 
-bank_presidents['unemployment_discussion_score'] = unemp_scores
-bank_presidents['dissent_tone_score'] = dissent_scores
+    # Get embeddings for concept anchors
+    print("\n   Encoding unemployment concepts...")
+    unemp_embeddings = {}
+    for concept, text in UNEMPLOYMENT_CONCEPTS.items():
+        unemp_embeddings[concept] = get_embedding(text)
 
-print(f"✅ Computed semantic scores for all statements")
+    print("   Encoding dissent concepts...")
+    dissent_embeddings = {}
+    for concept, text in DISSENT_CONCEPTS.items():
+        dissent_embeddings[concept] = get_embedding(text)
+
+    # Compute similarity scores for each speaker turn
+    print("\n   Scoring speaker statements...")
+
+    unemp_scores = []
+    dissent_scores = []
+
+    for idx, row in tqdm(bank_presidents.iterrows(), total=len(bank_presidents)):
+        if pd.isna(row['text']) or len(row['text']) < 50:
+            unemp_scores.append(np.nan)
+            dissent_scores.append(np.nan)
+            continue
+
+        # Get embedding for this statement
+        statement_emb = get_embedding(row['text'])
+
+        # Compute average similarity to unemployment concepts
+        unemp_sims = []
+        for concept_emb in unemp_embeddings.values():
+            sim = 1 - cosine(statement_emb, concept_emb)
+            unemp_sims.append(sim)
+        unemp_scores.append(np.mean(unemp_sims))
+
+        # Compute average similarity to dissent concepts
+        dissent_sims = []
+        for concept_emb in dissent_embeddings.values():
+            sim = 1 - cosine(statement_emb, concept_emb)
+            dissent_sims.append(sim)
+        dissent_scores.append(np.mean(dissent_sims))
+
+    bank_presidents['unemployment_discussion_score'] = unemp_scores
+    bank_presidents['dissent_tone_score'] = dissent_scores
+
+    # Cache the scores for future runs
+    print(f"\n   💾 Saving scores to cache...")
+    cached_scores = {
+        'unemployment_discussion_score': unemp_scores,
+        'dissent_tone_score': dissent_scores
+    }
+    with open(embeddings_cache_file, 'wb') as f:
+        pickle.dump(cached_scores, f)
+
+    print(f"✅ Computed and cached semantic scores for all statements")
 
 # ============================================================================
 # AGGREGATE TO SPEAKER-MEETING LEVEL
