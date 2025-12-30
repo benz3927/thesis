@@ -9,7 +9,7 @@ Uses semantic embeddings to measure:
 3. Interaction between regional conditions and dissent behavior
 
 Author: Benjamin Zhao
-Date: November 2025
+Date: 2026
 """
 
 import pandas as pd
