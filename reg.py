@@ -26,8 +26,8 @@ from dotenv import load_dotenv, find_dotenv
 # CONFIGURATION
 # ============================================================================
 
-OUTPUT_DIR = '/Users/CS/Documents/GitHub/fomc-transcript-2026/data/processed/'
-CACHE_DIR = '/Users/CS/Documents/GitHub/fomc-transcript-2026/data/cache/'
+OUTPUT_DIR = '/Users/CS/Documents/GitHub/thesis/data/processed/'
+CACHE_DIR = '/Users/CS/Documents/GitHub/thesis/data/cache/'
 
 # Load environment variables and initialize OpenAI client
 _ = load_dotenv(find_dotenv())
