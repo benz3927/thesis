@@ -9,7 +9,7 @@ Uses semantic embeddings to measure:
 3. Interaction between regional conditions and dissent behavior
 
 Author: Benjamin Zhao
-Date: 2026
+Date: November 2025
 """
 
 import pandas as pd
@@ -273,6 +273,83 @@ else:
     print(f"  ❌ No significant relationship (p={model1.pvalues['unemployment_rate']:.4f})")
 
 # ============================================================================
+# STATEMENT INSPECTION: Understand the negative relationship
+# ============================================================================
+
+print("\n" + "="*70)
+print("STATEMENT INSPECTION: High vs Low Unemployment Regions")
+print("="*70)
+
+# Identify high and low unemployment observations
+high_unemp = analysis_df[analysis_df['unemployment_rate'] > analysis_df['unemployment_rate'].quantile(0.75)]
+low_unemp = analysis_df[analysis_df['unemployment_rate'] < analysis_df['unemployment_rate'].quantile(0.25)]
+
+print(f"\nHigh unemployment regions (top quartile, >{analysis_df['unemployment_rate'].quantile(0.75):.1f}%):")
+print(f"  N = {len(high_unemp)} speaker-meetings")
+print(f"  Mean unemployment discussion score: {high_unemp['unemployment_discussion_score'].mean():.4f}")
+print(f"  Mean dissent tone score: {high_unemp['dissent_tone_score'].mean():.4f}")
+print(f"  Dissent rate: {high_unemp['is_dissent'].mean()*100:.1f}%")
+
+print(f"\nLow unemployment regions (bottom quartile, <{analysis_df['unemployment_rate'].quantile(0.25):.1f}%):")
+print(f"  N = {len(low_unemp)} speaker-meetings")
+print(f"  Mean unemployment discussion score: {low_unemp['unemployment_discussion_score'].mean():.4f}")
+print(f"  Mean dissent tone score: {low_unemp['dissent_tone_score'].mean():.4f}")
+print(f"  Dissent rate: {low_unemp['is_dissent'].mean()*100:.1f}%")
+
+# Get back to the original bank_presidents dataframe to see actual text
+print("\n" + "="*70)
+print("SAMPLE STATEMENTS: High Unemployment Regions")
+print("="*70)
+
+# Merge back to get text for high unemployment cases
+high_unemp_meetings = high_unemp[['date', 'speaker', 'district']].copy()
+high_unemp_with_text = bank_presidents.merge(
+    high_unemp_meetings, 
+    on=['date', 'speaker', 'district']
+)
+
+# Show top statements discussing unemployment from high-unemployment regions
+print("\n📊 TOP 5 STATEMENTS discussing unemployment (high unemp regions):")
+high_unemp_top = high_unemp_with_text.nlargest(5, 'unemployment_discussion_score')
+
+for i, (idx, row) in enumerate(high_unemp_top.iterrows(), 1):
+    print(f"\n[{i}] {row['speaker'].upper()} | {row['date'].date()} | {row['district']}")
+    print(f"    Unemployment rate: {row['unemployment_rate']:.1f}%")
+    print(f"    Unemployment discussion score: {row['unemployment_discussion_score']:.4f}")
+    print(f"    Text: {row['text'][:500]}...")
+
+# Show bottom statements (least discussing unemployment) from high-unemployment regions
+print("\n" + "="*70)
+print("📊 BOTTOM 5 STATEMENTS discussing unemployment (high unemp regions):")
+high_unemp_bottom = high_unemp_with_text.nsmallest(5, 'unemployment_discussion_score')
+
+for i, (idx, row) in enumerate(high_unemp_bottom.iterrows(), 1):
+    print(f"\n[{i}] {row['speaker'].upper()} | {row['date'].date()} | {row['district']}")
+    print(f"    Unemployment rate: {row['unemployment_rate']:.1f}%")
+    print(f"    Unemployment discussion score: {row['unemployment_discussion_score']:.4f}")
+    print(f"    Text: {row['text'][:500]}...")
+
+# Compare with low unemployment regions
+print("\n" + "="*70)
+print("SAMPLE STATEMENTS: Low Unemployment Regions")
+print("="*70)
+
+low_unemp_meetings = low_unemp[['date', 'speaker', 'district']].copy()
+low_unemp_with_text = bank_presidents.merge(
+    low_unemp_meetings, 
+    on=['date', 'speaker', 'district']
+)
+
+print("\n📊 TOP 5 STATEMENTS discussing unemployment (low unemp regions):")
+low_unemp_top = low_unemp_with_text.nlargest(5, 'unemployment_discussion_score')
+
+for i, (idx, row) in enumerate(low_unemp_top.iterrows(), 1):
+    print(f"\n[{i}] {row['speaker'].upper()} | {row['date'].date()} | {row['district']}")
+    print(f"    Unemployment rate: {row['unemployment_rate']:.1f}%")
+    print(f"    Unemployment discussion score: {row['unemployment_discussion_score']:.4f}")
+    print(f"    Text: {row['text'][:500]}...")
+
+# ============================================================================
 # ANALYSIS 2: DOES REGIONAL UNEMPLOYMENT PREDICT DISSENT?
 # ============================================================================
 
@@ -388,7 +465,7 @@ ax2.set_title('Discussion Content vs Dissent Behavior')
 # Plot 3: Dissent rates by unemployment quartile
 ax3 = axes[1, 0]
 analysis_df['unemp_quartile'] = pd.qcut(analysis_df['unemployment_rate'], 4, labels=['Q1', 'Q2', 'Q3', 'Q4'])
-dissent_by_quartile = analysis_df.groupby('unemp_quartile')['is_dissent'].mean()
+dissent_by_quartile = analysis_df.groupby('unemp_quartile', observed=True)['is_dissent'].mean()
 ax3.bar(range(len(dissent_by_quartile)), dissent_by_quartile.values)
 ax3.set_xticks(range(len(dissent_by_quartile)))
 ax3.set_xticklabels(dissent_by_quartile.index)
@@ -416,6 +493,15 @@ print(f"💾 Saved plot to regional_dissent_analysis.png")
 analysis_df.to_csv(f'{OUTPUT_DIR}/regional_dissent_data.csv', index=False)
 print(f"💾 Saved analysis data to regional_dissent_data.csv")
 
+# Save sample statements for qualitative analysis
+high_unemp_top[['date', 'speaker', 'district', 'unemployment_rate', 
+                'unemployment_discussion_score', 'dissent_tone_score', 'text']].to_csv(
+    f'{OUTPUT_DIR}/high_unemp_top_statements.csv', index=False)
+low_unemp_top[['date', 'speaker', 'district', 'unemployment_rate', 
+               'unemployment_discussion_score', 'dissent_tone_score', 'text']].to_csv(
+    f'{OUTPUT_DIR}/low_unemp_top_statements.csv', index=False)
+print(f"💾 Saved sample statements to CSV files for qualitative review")
+
 # ============================================================================
 # SUMMARY
 # ============================================================================
@@ -426,20 +512,26 @@ print("="*70)
 
 print("\n1. Regional Unemployment → Unemployment Discussion:")
 print(f"   β = {model1.params['unemployment_rate']:.4f}, p = {model1.pvalues['unemployment_rate']:.4f}")
+print(f"   COUNTERINTUITIVE: High unemployment regions discuss unemployment LESS")
 
 print("\n2. Regional Unemployment → Formal Dissent:")
 print(f"   β = {dissent_model.params['unemployment_rate']:.4f}, p = {dissent_model.pvalues['unemployment_rate']:.4f}")
 
 print("\n3. Unemployment Discussion → Dissent Tone:")
 print(f"   β = {model3.params['unemployment_discussion_score']:.4f}, p = {model3.pvalues['unemployment_discussion_score']:.4f}")
+print(f"   R² = {model3.rsquared:.3f} (WARNING: Very high correlation)")
+
+print("\n4. Comparison to Bobrov et al. (2024):")
+print(f"   Their finding (2006-2017): 1pp ↑ unemployment → 13.3pp ↑ P(dovish dissent)")
+print(f"   Our finding: Negative relationship between unemployment and discussion")
+print(f"   Possible explanation: Semantic analysis captures different dimension than votes")
 
 print("\n" + "="*70)
 print("✅ ANALYSIS COMPLETE!")
 print("="*70)
 
-print("\nInterpretation:")
-print("This analysis tests whether Regional Bank Presidents from areas with")
-print("high unemployment (1) discuss unemployment more in meetings and (2) are")
-print("more likely to dissent from the consensus policy decision.")
-print("\nSemantic embeddings measure the content of what they say, while formal")
-print("dissent measures their voting behavior.")
+print("\nNext steps:")
+print("1. Review sample statements in high_unemp_top_statements.csv")
+print("2. Investigate why high unemployment regions discuss unemployment LESS")
+print("3. Consider revising dissent concepts to reduce overlap with unemployment")
+print("4. Compare semantic patterns with actual dissent votes")
