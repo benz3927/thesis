@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Recreate the 3 input pickle files needed for prepare_regional_data.py:
+Create the 3 input pickle files needed for prepare_regional_data.py:
 1. extracted_transcripts_2006_2017.pkl - Transcripts filtered to 2006-2017
 2. regional_dissent_free.pkl - Dissent scores computed via semantic embeddings
 3. unemployment_2006_2017.pkl - Unemployment data filtered to 2006-2017
