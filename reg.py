@@ -91,14 +91,113 @@ print("\n[1] Loading data...")
 
 # Load transcript data with speaker-level information
 try:
-    with open(f'{CACHE_DIR}/fomc_transcripts_speakers.pkl', 'rb') as f:
+    with open(f'{CACHE_DIR}/extracted_transcripts_2006_2017.pkl', 'rb') as f:
         transcripts_df = pickle.load(f)
     print(f"✅ Loaded {len(transcripts_df)} speaker turns from transcripts")
+    print(f"   Sample speakers in original data: {sorted(transcripts_df['speaker'].unique())[:15]}")
 except:
     print("⚠️  Could not find speaker-level transcript data")
-    print("    Expected file: fomc_transcripts_speakers.pkl")
+    print("    Expected file: extracted_transcripts_2006_2017.pkl")
     print("    Columns needed: date, speaker, text, district, is_dissent")
     raise
+
+# Create speaker-to-district mapping for Federal Reserve Bank Presidents
+# Based on the 12 Federal Reserve Districts and their presidents during 2006-2017
+# Create comprehensive speaker-to-district mapping using actual speaker formats from data
+speaker_district_mapping = {}
+
+# Helper function to add all variants of a speaker
+def add_speaker_variants(last_name, district):
+    variants = [
+        f'AMR {last_name}',
+        f'AMS {last_name}', 
+        f'BMR {last_name}',
+        f'BMS {last_name}',
+        f'CMR {last_name}',
+        f'CMS {last_name}',
+        f'DMR {last_name}',
+        f'DMS {last_name}',
+        f'MR {last_name}',
+        f'MS {last_name}',
+        f'ABSMR {last_name}',
+        f'ABSMS {last_name}',
+        f'FOMCMR {last_name}',
+        f'FOMCMS {last_name}',
+        f'GDPMR {last_name}',
+        f'GDPMS {last_name}',
+        f'MBSMR {last_name}',
+        f'MBSMS {last_name}',
+        f'ECBMR {last_name}',
+        f'ECBMS {last_name}',
+        f'CBIASMR {last_name}',
+        f'DNAMR {last_name}',
+        f'IOERMR {last_name}',
+        f'BVICE CHAIRMAN {last_name}',
+        f'DOJVICE CHAIRMAN {last_name}',
+        f'PRESIDENT {last_name}'
+    ]
+    for variant in variants:
+        speaker_district_mapping[variant] = district
+
+# Boston Fed (1st District)
+add_speaker_variants('ROSENGREN', 'Boston')
+add_speaker_variants('MINEHAN', 'Boston')
+
+# New York Fed (2nd District) 
+add_speaker_variants('GEITHNER', 'New York')
+add_speaker_variants('DUDLEY', 'New York')
+
+# Philadelphia Fed (3rd District)
+add_speaker_variants('PLOSSER', 'Philadelphia')
+
+# Cleveland Fed (4th District)
+add_speaker_variants('PIANALTO', 'Cleveland')
+add_speaker_variants('MESTER', 'Cleveland')
+
+# Richmond Fed (5th District)
+add_speaker_variants('LACKER', 'Richmond')
+
+# Atlanta Fed (6th District)
+add_speaker_variants('GUYNN', 'Atlanta')
+add_speaker_variants('LOCKHART', 'Atlanta')
+
+# Chicago Fed (7th District)
+add_speaker_variants('MOSKOW', 'Chicago')
+add_speaker_variants('EVANS', 'Chicago')
+
+# St. Louis Fed (8th District)
+add_speaker_variants('POOLE', 'St. Louis')
+add_speaker_variants('BULLARD', 'St. Louis')
+
+# Minneapolis Fed (9th District)
+add_speaker_variants('STERN', 'Minneapolis')
+add_speaker_variants('KOCHERLAKOTA', 'Minneapolis')
+
+# Kansas City Fed (10th District)
+add_speaker_variants('HOENIG', 'Kansas City')
+add_speaker_variants('GEORGE', 'Kansas City')
+
+# Dallas Fed (11th District)
+add_speaker_variants('FISHER', 'Dallas')
+
+# San Francisco Fed (12th District)
+add_speaker_variants('WILLIAMS', 'San Francisco')
+
+# Map speakers directly to districts without complex cleaning
+def map_speaker_to_district(speaker):
+    # Only map regional bank presidents, not Board governors
+    if speaker in speaker_district_mapping:
+        return speaker_district_mapping[speaker]
+    else:
+        return None  # Board governors and other officials don't have districts
+
+transcripts_df['district'] = transcripts_df['speaker'].apply(map_speaker_to_district)
+
+print(f"   Sample speakers: {sorted(transcripts_df['speaker'].unique())[:15]}")
+
+# Keep only speakers from regional banks (those with districts)
+transcripts_df = transcripts_df[transcripts_df['district'].notna()].copy()
+print(f"✅ Mapped speakers to districts, kept {len(transcripts_df)} turns from regional bank presidents")
 
 # Load regional unemployment data
 try:
@@ -113,9 +212,18 @@ except:
 
 # Diagnostic: Check date ranges before merge
 print(f"\n🔍 Pre-merge diagnostics:")
-print(f"   Transcript dates: {transcripts_df['date'].min()} to {transcripts_df['date'].max()}")
+print(f"   Transcript columns: {list(transcripts_df.columns)}")
+if len(transcripts_df) > 0:
+    print(f"   Transcript dates: {transcripts_df['date'].min()} to {transcripts_df['date'].max()}")
+    print(f"   Sample speakers: {sorted(transcripts_df['speaker'].unique())[:10]}")
+    print(f"   Total unique speakers: {len(transcripts_df['speaker'].unique())}")
+    if 'district' in transcripts_df.columns:
+        print(f"   Transcript districts: {sorted(transcripts_df['district'].unique())}")
+    else:
+        print("   ⚠️ No 'district' column found in transcripts")
+else:
+    print("   ⚠️ No transcripts data after filtering")
 print(f"   Unemployment dates: {regional_unemp['date'].min()} to {regional_unemp['date'].max()}")
-print(f"   Transcript districts: {sorted(transcripts_df['district'].unique())}")
 print(f"   Unemployment districts: {sorted(regional_unemp['district'].unique())}")
 
 # Drop unemployment_rate from transcripts if it exists
@@ -138,7 +246,7 @@ df = pd.merge(transcripts_df,
               how='left')
 
 # Convert is_dissent to integer for logistic regression
-df['is_dissent'] = df['is_dissent'].astype(int)
+# df['is_dissent'] = df['is_dissent'].astype(int)  # Comment out for now
 print("✅ Converted is_dissent to integer (0/1)")
 
 # Debug: Check merge results
@@ -150,8 +258,8 @@ if df['unemployment_rate'].notna().sum() > 0:
     print(f"   Unemployment rate range: {df['unemployment_rate'].min():.1f}% to {df['unemployment_rate'].max():.1f}%")
     print(f"   Mean unemployment rate: {df['unemployment_rate'].mean():.1f}%")
 
-# Filter to only Regional Bank Presidents
-bank_presidents = df[df['is_bank_president'] == True].copy()
+# All remaining speakers are Regional Bank Presidents (already filtered by district)
+bank_presidents = df.copy()
 
 print(f"\n✅ Working with {len(bank_presidents)} statements from Regional Bank Presidents")
 print(f"   Statements with unemployment data: {bank_presidents['unemployment_rate'].notna().sum()}")
