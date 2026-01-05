@@ -32,8 +32,16 @@ warnings.filterwarnings('ignore')
 # CONFIGURATION
 # ============================================================================
 
-OUTPUT_DIR = 'data/processed/'
-CACHE_DIR = 'data/cache/'
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Create paths relative to the script location
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'data', 'processed')
+CACHE_DIR = os.path.join(SCRIPT_DIR, 'data', 'cache')
+
+# Create directories if they don't exist
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(CACHE_DIR, exist_ok=True)
 
 # Load environment variables and initialize OpenAI client
 _ = load_dotenv(find_dotenv())
