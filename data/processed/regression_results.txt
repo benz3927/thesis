@@ -1,308 +1,124 @@
-
-======================================================================
 NAIVE MODEL
 ======================================================================
                                   OLS Regression Results                                 
 =========================================================================================
-Dep. Variable:     unemployment_discussion_score   R-squared:                       0.006
-Model:                                       OLS   Adj. R-squared:                  0.005
-Method:                            Least Squares   F-statistic:                     6.301
-Date:                           Thu, 01 Jan 2026   Prob (F-statistic):             0.0122
-Time:                                   21:43:32   Log-Likelihood:                 1692.9
-No. Observations:                           1075   AIC:                            -3382.
-Df Residuals:                               1073   BIC:                            -3372.
+Dep. Variable:     unemployment_discussion_score   R-squared:                       0.024
+Model:                                       OLS   Adj. R-squared:                  0.023
+Method:                            Least Squares   F-statistic:                     23.33
+Date:                           Mon, 05 Jan 2026   Prob (F-statistic):           1.59e-06
+Time:                                   14:48:18   Log-Likelihood:                 1481.3
+No. Observations:                            967   AIC:                            -2959.
+Df Residuals:                                965   BIC:                            -2949.
 Df Model:                                      1                                         
 Covariance Type:                             HC1                                         
 =====================================================================================
                         coef    std err          z      P>|z|      [0.025      0.975]
 -------------------------------------------------------------------------------------
-const                 0.2659      0.005     49.311      0.000       0.255       0.276
-unemployment_rate    -0.0020      0.001     -2.510      0.012      -0.004      -0.000
+const                 0.2974      0.008     37.721      0.000       0.282       0.313
+unemployment_rate    -0.0054      0.001     -4.830      0.000      -0.008      -0.003
 ==============================================================================
-Omnibus:                       55.640   Durbin-Watson:                   1.856
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):               41.654
-Skew:                           0.384   Prob(JB):                     9.02e-10
-Kurtosis:                       2.418   Cond. No.                         25.2
+Omnibus:                       24.927   Durbin-Watson:                   1.604
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               26.492
+Skew:                           0.403   Prob(JB):                     1.77e-06
+Kurtosis:                       2.915   Cond. No.                         33.3
 ==============================================================================
 
 Notes:
 [1] Standard Errors are heteroscedasticity robust (HC1)
 
-
-======================================================================
-FIXED_EFFECTS MODEL
+FIXED EFFECTS MODEL
 ======================================================================
                                   OLS Regression Results                                 
 =========================================================================================
-Dep. Variable:     unemployment_discussion_score   R-squared:                       0.041
-Model:                                       OLS   Adj. R-squared:                  0.036
-Method:                            Least Squares   F-statistic:                     5.620
-Date:                           Thu, 01 Jan 2026   Prob (F-statistic):            0.00158
-Time:                                   21:43:32   Log-Likelihood:                 1712.2
-No. Observations:                           1075   AIC:                            -3412.
-Df Residuals:                               1069   BIC:                            -3383.
+Dep. Variable:     unemployment_discussion_score   R-squared:                       0.053
+Model:                                       OLS   Adj. R-squared:                  0.048
+Method:                            Least Squares   F-statistic:                     4.559
+Date:                           Mon, 05 Jan 2026   Prob (F-statistic):            0.00263
+Time:                                   14:48:18   Log-Likelihood:                 1495.7
+No. Observations:                            967   AIC:                            -2979.
+Df Residuals:                                961   BIC:                            -2950.
 Df Model:                                      5                                         
 Covariance Type:                         cluster                                         
 ==============================================================================================
                                  coef    std err          z      P>|z|      [0.025      0.975]
 ----------------------------------------------------------------------------------------------
-Intercept                      0.2615      0.014     18.320      0.000       0.234       0.289
-C(region)[T.East]             -0.0139      0.017     -0.825      0.410      -0.047       0.019
-C(region)[T.West]              0.0024      0.017      0.144      0.886      -0.030       0.035
-C(era)[T.Pre-Crisis]          -0.0103      0.010     -1.028      0.304      -0.030       0.009
-C(era)[T.Zero Lower Bound]    -0.0248      0.007     -3.571      0.000      -0.038      -0.011
-unemployment_rate              0.0018      0.002      0.966      0.334      -0.002       0.005
+Intercept                      0.2506      0.072      3.478      0.001       0.109       0.392
+C(region)[T.East]             -0.0191      0.018     -1.062      0.288      -0.054       0.016
+C(region)[T.West]             -0.0038      0.019     -0.194      0.846      -0.042       0.034
+C(era)[T.Pre-Crisis]          -0.0181      0.016     -1.108      0.268      -0.050       0.014
+C(era)[T.Zero Lower Bound]    -0.0530      0.056     -0.954      0.340      -0.162       0.056
+unemployment_rate              0.0079      0.016      0.487      0.626      -0.024       0.040
 ==============================================================================
-Omnibus:                       45.908   Durbin-Watson:                   1.843
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):               37.295
-Skew:                           0.375   Prob(JB):                     7.97e-09
-Kurtosis:                       2.480   Cond. No.                         36.1
+Omnibus:                       24.920   Durbin-Watson:                   1.551
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               26.485
+Skew:                           0.403   Prob(JB):                     1.77e-06
+Kurtosis:                       2.922   Cond. No.                         454.
 ==============================================================================
 
 Notes:
 [1] Standard Errors are robust to cluster correlation (cluster)
 
-
-======================================================================
-WITHIN_GROUP MODEL
+WITHIN-GROUP MODEL
 ======================================================================
                             OLS Regression Results                            
 ==============================================================================
-Dep. Variable:      discussion_within   R-squared:                       0.002
-Model:                            OLS   Adj. R-squared:                  0.001
-Method:                 Least Squares   F-statistic:                     2.041
-Date:                Thu, 01 Jan 2026   Prob (F-statistic):              0.153
-Time:                        21:43:32   Log-Likelihood:                 1716.9
-No. Observations:                1075   AIC:                            -3430.
-Df Residuals:                    1073   BIC:                            -3420.
+Dep. Variable:      discussion_within   R-squared:                       0.000
+Model:                            OLS   Adj. R-squared:                 -0.001
+Method:                 Least Squares   F-statistic:                    0.2298
+Date:                Mon, 05 Jan 2026   Prob (F-statistic):              0.632
+Time:                        14:48:18   Log-Likelihood:                 1503.1
+No. Observations:                 967   AIC:                            -3002.
+Df Residuals:                     965   BIC:                            -2992.
 Df Model:                           1                                         
 Covariance Type:                  HC1                                         
 =====================================================================================
                         coef    std err          z      P>|z|      [0.025      0.975]
 -------------------------------------------------------------------------------------
-const             -4.391e-18      0.001  -2.94e-15      1.000      -0.003       0.003
-unemp_rate_within     0.0018      0.001      1.428      0.153      -0.001       0.004
+const               1.54e-17      0.002   9.35e-15      1.000      -0.003       0.003
+unemp_rate_within     0.0084      0.018      0.479      0.632      -0.026       0.043
 ==============================================================================
-Omnibus:                       45.377   Durbin-Watson:                   1.841
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):               37.152
-Skew:                           0.376   Prob(JB):                     8.56e-09
-Kurtosis:                       2.485   Cond. No.                         1.19
+Omnibus:                       25.697   Durbin-Watson:                   1.561
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               27.368
+Skew:                           0.410   Prob(JB):                     1.14e-06
+Kurtosis:                       2.911   Cond. No.                         10.9
 ==============================================================================
 
 Notes:
 [1] Standard Errors are heteroscedasticity robust (HC1)
 
-
-======================================================================
-DEVIATION MODEL
-======================================================================
-                                  OLS Regression Results                                 
-=========================================================================================
-Dep. Variable:     unemployment_discussion_score   R-squared:                       0.024
-Model:                                       OLS   Adj. R-squared:                  0.021
-Method:                            Least Squares   F-statistic:                     1.209
-Date:                           Thu, 01 Jan 2026   Prob (F-statistic):              0.329
-Time:                                   21:43:32   Log-Likelihood:                 1702.9
-No. Observations:                           1075   AIC:                            -3398.
-Df Residuals:                               1071   BIC:                            -3378.
-Df Model:                                      3                                         
-Covariance Type:                         cluster                                         
-=========================================================================================
-                            coef    std err          z      P>|z|      [0.025      0.975]
------------------------------------------------------------------------------------------
-Intercept                 0.2692      0.010     26.958      0.000       0.250       0.289
-C(region)[T.East]        -0.0139      0.017     -0.820      0.412      -0.047       0.019
-C(region)[T.West]         0.0024      0.017      0.143      0.886      -0.030       0.035
-unemp_deviation       -1.012e-17   1.21e-17     -0.836      0.403   -3.39e-17    1.36e-17
-national_unemployment    -0.0020      0.001     -1.419      0.156      -0.005       0.001
-==============================================================================
-Omnibus:                       52.075   Durbin-Watson:                   1.811
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):               40.282
-Skew:                           0.383   Prob(JB):                     1.79e-09
-Kurtosis:                       2.440   Cond. No.                     3.20e+16
-==============================================================================
-
-Notes:
-[1] Standard Errors are robust to cluster correlation (cluster)
-[2] The smallest eigenvalue is 5.12e-29. This might indicate that there are
-strong multicollinearity problems or that the design matrix is singular.
-
-
-======================================================================
-YEAR_FE MODEL
-======================================================================
-                                  OLS Regression Results                                 
-=========================================================================================
-Dep. Variable:     unemployment_discussion_score   R-squared:                       0.068
-Model:                                       OLS   Adj. R-squared:                  0.056
-Method:                            Least Squares   F-statistic:                     44.69
-Date:                           Thu, 01 Jan 2026   Prob (F-statistic):           2.62e-13
-Time:                                   21:43:32   Log-Likelihood:                 1727.8
-No. Observations:                           1075   AIC:                            -3426.
-Df Residuals:                               1060   BIC:                            -3351.
-Df Model:                                     14                                         
-Covariance Type:                         cluster                                         
-=====================================================================================
-                        coef    std err          z      P>|z|      [0.025      0.975]
--------------------------------------------------------------------------------------
-Intercept             0.2663      0.015     18.303      0.000       0.238       0.295
-C(region)[T.East]    -0.0142      0.017     -0.838      0.402      -0.047       0.019
-C(region)[T.West]     0.0019      0.017      0.112      0.911      -0.031       0.034
-C(year)[T.2007]      -0.0041      0.005     -0.781      0.435      -0.015       0.006
-C(year)[T.2008]       0.0059      0.008      0.696      0.487      -0.011       0.022
-C(year)[T.2009]      -0.0130      0.011     -1.162      0.245      -0.035       0.009
-C(year)[T.2010]       0.0103      0.014      0.735      0.462      -0.017       0.038
-C(year)[T.2011]      -0.0107      0.013     -0.803      0.422      -0.037       0.015
-C(year)[T.2012]       0.0012      0.014      0.087      0.931      -0.027       0.029
-C(year)[T.2013]       0.0148      0.014      1.075      0.282      -0.012       0.042
-C(year)[T.2014]      -0.0090      0.012     -0.776      0.438      -0.032       0.014
-C(year)[T.2015]      -0.0196      0.010     -1.970      0.049      -0.039   -9.85e-05
-C(year)[T.2016]       0.0135      0.011      1.208      0.227      -0.008       0.035
-C(year)[T.2017]       0.0076      0.009      0.838      0.402      -0.010       0.025
-unemployment_rate    -0.0015      0.002     -0.755      0.450      -0.005       0.002
-==============================================================================
-Omnibus:                       42.709   Durbin-Watson:                   1.895
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):               34.295
-Skew:                           0.354   Prob(JB):                     3.57e-08
-Kurtosis:                       2.487   Cond. No.                         209.
-==============================================================================
-
-Notes:
-[1] Standard Errors are robust to cluster correlation (cluster)
-
-
-======================================================================
 INTERACTION MODEL
 ======================================================================
                                   OLS Regression Results                                 
 =========================================================================================
-Dep. Variable:     unemployment_discussion_score   R-squared:                       0.046
-Model:                                       OLS   Adj. R-squared:                  0.039
-Method:                            Least Squares   F-statistic:                     14.61
-Date:                           Thu, 01 Jan 2026   Prob (F-statistic):           4.12e-07
-Time:                                   21:43:32   Log-Likelihood:                 1714.9
-No. Observations:                           1075   AIC:                            -3414.
-Df Residuals:                               1067   BIC:                            -3374.
+Dep. Variable:     unemployment_discussion_score   R-squared:                       0.055
+Model:                                       OLS   Adj. R-squared:                  0.048
+Method:                            Least Squares   F-statistic:                     4.094
+Date:                           Mon, 05 Jan 2026   Prob (F-statistic):            0.00223
+Time:                                   14:48:18   Log-Likelihood:                 1496.6
+No. Observations:                            967   AIC:                            -2977.
+Df Residuals:                                959   BIC:                            -2938.
 Df Model:                                      7                                         
 Covariance Type:                         cluster                                         
 ================================================================================================================
                                                    coef    std err          z      P>|z|      [0.025      0.975]
 ----------------------------------------------------------------------------------------------------------------
-Intercept                                        0.2232      0.046      4.901      0.000       0.134       0.313
-C(era)[T.Pre-Crisis]                            -0.0511      0.057     -0.893      0.372      -0.163       0.061
-C(era)[T.Zero Lower Bound]                       0.0178      0.050      0.356      0.722      -0.080       0.116
-C(region)[T.East]                               -0.0141      0.017     -0.834      0.404      -0.047       0.019
-C(region)[T.West]                                0.0024      0.017      0.147      0.883      -0.030       0.035
-unemployment_rate                                0.0100      0.010      0.990      0.322      -0.010       0.030
-unemployment_rate:C(era)[T.Pre-Crisis]           0.0082      0.013      0.658      0.510      -0.016       0.033
-unemployment_rate:C(era)[T.Zero Lower Bound]    -0.0088      0.011     -0.823      0.410      -0.030       0.012
+Intercept                                        0.5596      0.330      1.697      0.090      -0.087       1.206
+C(era)[T.Pre-Crisis]                            -0.1714      0.313     -0.548      0.583      -0.784       0.441
+C(era)[T.Zero Lower Bound]                      -0.4664      0.360     -1.296      0.195      -1.172       0.239
+C(region)[T.East]                               -0.0191      0.018     -1.064      0.287      -0.054       0.016
+C(region)[T.West]                               -0.0038      0.019     -0.196      0.844      -0.042       0.034
+unemployment_rate                               -0.0606      0.072     -0.843      0.399      -0.202       0.080
+unemployment_rate:C(era)[T.Pre-Crisis]           0.0376      0.068      0.556      0.578      -0.095       0.170
+unemployment_rate:C(era)[T.Zero Lower Bound]     0.0817      0.074      1.105      0.269      -0.063       0.226
 ==============================================================================
-Omnibus:                       47.745   Durbin-Watson:                   1.851
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):               37.337
-Skew:                           0.368   Prob(JB):                     7.81e-09
-Kurtosis:                       2.458   Cond. No.                         607.
-==============================================================================
-
-Notes:
-[1] Standard Errors are robust to cluster correlation (cluster)
-
-
-======================================================================
-LPM_NAIVE MODEL
-======================================================================
-                            OLS Regression Results                            
-==============================================================================
-Dep. Variable:             is_dissent   R-squared:                       0.002
-Model:                            OLS   Adj. R-squared:                  0.001
-Method:                 Least Squares   F-statistic:                     1.867
-Date:                Thu, 01 Jan 2026   Prob (F-statistic):              0.172
-Time:                        21:43:32   Log-Likelihood:                 994.83
-No. Observations:                1075   AIC:                            -1986.
-Df Residuals:                    1073   BIC:                            -1976.
-Df Model:                           1                                         
-Covariance Type:                  HC1                                         
-=====================================================================================
-                        coef    std err          z      P>|z|      [0.025      0.975]
--------------------------------------------------------------------------------------
-const                 0.0237      0.012      1.964      0.050    4.76e-05       0.047
-unemployment_rate    -0.0022      0.002     -1.366      0.172      -0.005       0.001
-==============================================================================
-Omnibus:                     1723.432   Durbin-Watson:                   2.023
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):           485755.256
-Skew:                          10.194   Prob(JB):                         0.00
-Kurtosis:                     105.123   Cond. No.                         25.2
-==============================================================================
-
-Notes:
-[1] Standard Errors are heteroscedasticity robust (HC1)
-
-
-======================================================================
-LPM_CONTROLLED MODEL
-======================================================================
-                            OLS Regression Results                            
-==============================================================================
-Dep. Variable:             is_dissent   R-squared:                       0.020
-Model:                            OLS   Adj. R-squared:                  0.016
-Method:                 Least Squares   F-statistic:                    0.8123
-Date:                Thu, 01 Jan 2026   Prob (F-statistic):              0.553
-Time:                        21:43:32   Log-Likelihood:                 1004.9
-No. Observations:                1075   AIC:                            -1998.
-Df Residuals:                    1069   BIC:                            -1968.
-Df Model:                           5                                         
-Covariance Type:              cluster                                         
-==============================================================================================
-                                 coef    std err          z      P>|z|      [0.025      0.975]
-----------------------------------------------------------------------------------------------
-Intercept                      0.0112      0.010      1.180      0.238      -0.007       0.030
-C(region)[T.East]              0.0274      0.028      0.979      0.328      -0.028       0.082
-C(region)[T.West]             -0.0026      0.003     -0.971      0.332      -0.008       0.003
-C(era)[T.Pre-Crisis]           0.0050      0.011      0.437      0.662      -0.017       0.027
-C(era)[T.Zero Lower Bound]    -0.0006      0.008     -0.082      0.935      -0.016       0.015
-unemployment_rate             -0.0014      0.002     -0.699      0.484      -0.005       0.003
-==============================================================================
-Omnibus:                     1697.373   Durbin-Watson:                   1.995
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):           450516.765
-Skew:                           9.906   Prob(JB):                         0.00
-Kurtosis:                     101.313   Cond. No.                         36.1
+Omnibus:                       23.942   Durbin-Watson:                   1.554
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               25.368
+Skew:                           0.394   Prob(JB):                     3.10e-06
+Kurtosis:                       2.903   Cond. No.                     3.63e+03
 ==============================================================================
 
 Notes:
 [1] Standard Errors are robust to cluster correlation (cluster)
-
-
-======================================================================
-LPM_INTERACTION MODEL
-======================================================================
-                            OLS Regression Results                            
-==============================================================================
-Dep. Variable:             is_dissent   R-squared:                       0.021
-Model:                            OLS   Adj. R-squared:                  0.015
-Method:                 Least Squares   F-statistic:                     1.616
-Date:                Thu, 01 Jan 2026   Prob (F-statistic):              0.181
-Time:                        21:43:32   Log-Likelihood:                 1005.2
-No. Observations:                1075   AIC:                            -1994.
-Df Residuals:                    1067   BIC:                            -1955.
-Df Model:                           7                                         
-Covariance Type:              cluster                                         
-================================================================================================================
-                                                   coef    std err          z      P>|z|      [0.025      0.975]
-----------------------------------------------------------------------------------------------------------------
-Intercept                                        0.0172      0.018      0.964      0.335      -0.018       0.052
-C(era)[T.Pre-Crisis]                             0.0516      0.073      0.710      0.478      -0.091       0.194
-C(era)[T.Zero Lower Bound]                      -0.0092      0.019     -0.473      0.636      -0.047       0.029
-C(region)[T.East]                                0.0275      0.028      0.977      0.329      -0.028       0.083
-C(region)[T.West]                               -0.0026      0.003     -0.966      0.334      -0.008       0.003
-unemployment_rate                               -0.0027      0.003     -0.787      0.431      -0.009       0.004
-unemployment_rate:C(era)[T.Pre-Crisis]          -0.0097      0.013     -0.740      0.459      -0.035       0.016
-unemployment_rate:C(era)[T.Zero Lower Bound]     0.0016      0.003      0.494      0.621      -0.005       0.008
-==============================================================================
-Omnibus:                     1696.657   Durbin-Watson:                   1.997
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):           449594.542
-Skew:                           9.898   Prob(JB):                         0.00
-Kurtosis:                     101.212   Cond. No.                         607.
-==============================================================================
-
-Notes:
-[1] Standard Errors are robust to cluster correlation (cluster)
+[2] The condition number is large, 3.63e+03. This might indicate that there are
+strong multicollinearity or other numerical problems.
 
