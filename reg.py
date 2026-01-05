@@ -32,12 +32,9 @@ warnings.filterwarnings('ignore')
 # CONFIGURATION
 # ============================================================================
 
-# Get the directory where this script is located
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Create paths relative to the script location
-OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'data', 'processed')
-CACHE_DIR = os.path.join(SCRIPT_DIR, 'data', 'cache')
+# Create paths relative to the current working directory
+OUTPUT_DIR = os.path.join('data', 'processed')
+CACHE_DIR = os.path.join('data', 'cache')
 
 # Create directories if they don't exist
 os.makedirs(OUTPUT_DIR, exist_ok=True)
