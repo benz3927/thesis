@@ -197,13 +197,27 @@ print(f"   Sample speakers: {sorted(transcripts_df['speaker'].unique())[:15]}")
 
 # Keep only speakers from regional banks (those with districts)
 transcripts_df = transcripts_df[transcripts_df['district'].notna()].copy()
-print(f"✅ Mapped speakers to districts, kept {len(transcripts_df)} turns from regional bank presidents")
+
+# FILTER TO 2006-2017 PERIOD ONLY - this dramatically reduces dataset size
+transcripts_df = transcripts_df[
+    (transcripts_df['date'] >= pd.Timestamp('2006-01-01')) & 
+    (transcripts_df['date'] <= pd.Timestamp('2017-12-31'))
+].copy()
+
+print(f"✅ Mapped speakers to districts, kept {len(transcripts_df)} turns from regional bank presidents (2006-2017)")
 
 # Load regional unemployment data
 try:
     regional_unemp = pd.read_csv(f'{CACHE_DIR}/regional_unemployment.csv')
     regional_unemp['date'] = pd.to_datetime(regional_unemp['date'])
-    print(f"✅ Loaded regional unemployment data")
+    
+    # ALSO FILTER UNEMPLOYMENT DATA TO 2006-2017 PERIOD
+    regional_unemp = regional_unemp[
+        (regional_unemp['date'] >= pd.Timestamp('2006-01-01')) & 
+        (regional_unemp['date'] <= pd.Timestamp('2017-12-31'))
+    ].copy()
+    
+    print(f"✅ Loaded regional unemployment data (2006-2017: {len(regional_unemp)} rows)")
 except:
     print("⚠️  Could not find regional unemployment data")
     print("    Expected file: regional_unemployment.csv")
