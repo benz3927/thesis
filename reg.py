@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 """
-Regional Context Analysis: Do Regional Bank Presidents with Higher Local 
-Unemployment Discuss Unemployment More?
+Regional Unemployment and Dissent Analysis
 
-FIXED: Aggregates unemployment data before merge to avoid Cartesian product
+Research Question: Do Regional Bank Presidents from high-unemployment districts
+                   express more dissent in FOMC meetings?
+
+DV: disagreement_score (semantic measure of dissent)
+IV: district_unemployment_rate (actual economic data)
+
+Following Bobrov et al. (2024) specification with Speaker + Year FE
+
+Author: Benjamin Zhao
+Date: January 2026
 """
 
 import pandas as pd
 import numpy as np
 from openai import OpenAI
-from scipy.spatial.distance import cosine
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 import pickle
-from tqdm import tqdm
 import os
 from dotenv import load_dotenv, find_dotenv
 import warnings
@@ -23,8 +29,9 @@ warnings.filterwarnings('ignore')
 # CONFIGURATION
 # ============================================================================
 
-OUTPUT_DIR = os.path.join('data', 'processed')
-CACHE_DIR = os.path.join('data', 'cache')
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'data', 'processed')
+CACHE_DIR = os.path.join(SCRIPT_DIR, 'data', 'cache')
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -39,6 +46,8 @@ print(f"✅ OpenAI API key loaded successfully")
 
 print("="*70)
 print("REGIONAL UNEMPLOYMENT VS. DISSENT ANALYSIS")
+print("Research Question: Do bank presidents from high-unemployment")
+print("                   districts express more dissent?")
 print("="*70)
 
 # ============================================================================
@@ -47,291 +56,332 @@ print("="*70)
 
 print("\n[1] Loading data...")
 
-# Load transcripts with scores (from compute_all_embeddings.py)
 try:
-    with open(f'{CACHE_DIR}/transcripts_with_scores_2006_2017.pkl', 'rb') as f:
-        transcripts_df = pickle.load(f)
-    print(f"✅ Loaded {len(transcripts_df)} speaker turns with semantic scores")
+    with open(f'{CACHE_DIR}/transcripts_with_disagreement_scores_2006_2017.pkl', 'rb') as f:
+        df = pickle.load(f)
+    print(f"✅ Loaded {len(df)} speaker turns with disagreement scores")
+    print(f"   Score range: {df['disagreement_score'].min():.4f} to {df['disagreement_score'].max():.4f}")
 except:
-    print("⚠️  Could not find transcripts_with_scores_2006_2017.pkl")
-    print("    Run compute_all_embeddings.py first!")
+    print("⚠️  Could not find transcripts_with_disagreement_scores_2006_2017.pkl")
+    print("    Run compute_disagreement_embeddings.py first!")
     raise
 
-# Create speaker-to-district mapping
-speaker_district_mapping = {}
+# ============================================================================
+# MAP SPEAKERS TO DISTRICTS
+# ============================================================================
 
-def add_speaker_variants(last_name, district):
-    variants = [
-        f'AMR {last_name}', f'AMS {last_name}', f'BMR {last_name}',
-        f'BMS {last_name}', f'CMR {last_name}', f'CMS {last_name}',
-        f'DMR {last_name}', f'DMS {last_name}', f'MR {last_name}',
-        f'MS {last_name}', f'ABSMR {last_name}', f'ABSMS {last_name}',
-        f'FOMCMR {last_name}', f'FOMCMS {last_name}', f'GDPMR {last_name}',
-        f'GDPMS {last_name}', f'MBSMR {last_name}', f'MBSMS {last_name}',
-        f'ECBMR {last_name}', f'ECBMS {last_name}', f'CBIASMR {last_name}',
-        f'DNAMR {last_name}', f'IOERMR {last_name}',
-        f'BVICE CHAIRMAN {last_name}', f'DOJVICE CHAIRMAN {last_name}',
-        f'PRESIDENT {last_name}'
-    ]
-    for variant in variants:
-        speaker_district_mapping[variant] = district
+print("\n[2] Mapping speakers to districts...")
 
-# Boston Fed
-add_speaker_variants('ROSENGREN', 'Boston')
-add_speaker_variants('MINEHAN', 'Boston')
+SPEAKER_TO_DISTRICT = {
+    'ROSENGREN': 'Boston', 'MINEHAN': 'Boston',
+    'GEITHNER': 'New York', 'DUDLEY': 'New York',
+    'PLOSSER': 'Philadelphia', 'SANTOMERO': 'Philadelphia',
+    'PIANALTO': 'Cleveland', 'MESTER': 'Cleveland',
+    'LACKER': 'Richmond', 'BROADDUS': 'Richmond',
+    'GUYNN': 'Atlanta', 'LOCKHART': 'Atlanta',
+    'MOSKOW': 'Chicago', 'EVANS': 'Chicago',
+    'POOLE': 'St. Louis', 'BULLARD': 'St. Louis',
+    'STERN': 'Minneapolis', 'KOCHERLAKOTA': 'Minneapolis', 'KASHKARI': 'Minneapolis',
+    'HOENIG': 'Kansas City', 'GEORGE': 'Kansas City',
+    'FISHER': 'Dallas',
+    'YELLEN': 'San Francisco', 'PARRY': 'San Francisco', 'WILLIAMS': 'San Francisco',
+}
 
-# New York Fed
-add_speaker_variants('GEITHNER', 'New York')
-add_speaker_variants('DUDLEY', 'New York')
-
-# Philadelphia Fed
-add_speaker_variants('PLOSSER', 'Philadelphia')
-
-# Cleveland Fed
-add_speaker_variants('PIANALTO', 'Cleveland')
-add_speaker_variants('MESTER', 'Cleveland')
-
-# Richmond Fed
-add_speaker_variants('LACKER', 'Richmond')
-
-# Atlanta Fed
-add_speaker_variants('GUYNN', 'Atlanta')
-add_speaker_variants('LOCKHART', 'Atlanta')
-
-# Chicago Fed
-add_speaker_variants('MOSKOW', 'Chicago')
-add_speaker_variants('EVANS', 'Chicago')
-
-# St. Louis Fed
-add_speaker_variants('POOLE', 'St. Louis')
-add_speaker_variants('BULLARD', 'St. Louis')
-
-# Minneapolis Fed
-add_speaker_variants('STERN', 'Minneapolis')
-add_speaker_variants('KOCHERLAKOTA', 'Minneapolis')
-
-# Kansas City Fed
-add_speaker_variants('HOENIG', 'Kansas City')
-add_speaker_variants('GEORGE', 'Kansas City')
-
-# Dallas Fed
-add_speaker_variants('FISHER', 'Dallas')
-
-# San Francisco Fed
-add_speaker_variants('WILLIAMS', 'San Francisco')
-
-def map_speaker_to_district(speaker):
-    if speaker in speaker_district_mapping:
-        return speaker_district_mapping[speaker]
-    else:
+def extract_last_name(speaker):
+    if pd.isna(speaker):
         return None
+    speaker = str(speaker).upper().strip()
+    for prefix in ['MR ', 'MS ', 'CHAIRMAN ', 'VICE CHAIRMAN ', 'PRESIDENT ', 'GOVERNOR ', 'RPIX']:
+        if speaker.startswith(prefix):
+            speaker = speaker[len(prefix):].strip()
+    parts = speaker.split()
+    return parts[0] if parts else None
 
-transcripts_df['district'] = transcripts_df['speaker'].apply(map_speaker_to_district)
+df['speaker_clean'] = df['speaker'].apply(extract_last_name)
+df['district'] = df['speaker_clean'].map(SPEAKER_TO_DISTRICT)
 
-# Keep only Regional Bank Presidents
-transcripts_df = transcripts_df[transcripts_df['district'].notna()].copy()
+bank_presidents = df[df['district'].notna()].copy()
 
-print(f"✅ Mapped to districts, kept {len(transcripts_df)} statements from Regional Bank Presidents")
+print(f"✅ Mapped to districts, kept {len(bank_presidents)} statements from Regional Bank Presidents")
+print(f"   Unique speakers: {bank_presidents['speaker_clean'].nunique()}")
+print(f"   Unique districts: {bank_presidents['district'].nunique()}")
 
-# Load unemployment data
+# ============================================================================
+# LOAD UNEMPLOYMENT DATA
+# ============================================================================
+
+print("\n[3] Loading unemployment data...")
+
 try:
     regional_unemp = pd.read_csv(f'{CACHE_DIR}/regional_unemployment.csv')
     regional_unemp['date'] = pd.to_datetime(regional_unemp['date'])
-    
-    # Filter to 2006-2017
-    regional_unemp = regional_unemp[
-        (regional_unemp['date'] >= pd.Timestamp('2006-01-01')) & 
-        (regional_unemp['date'] <= pd.Timestamp('2017-12-31'))
-    ].copy()
-    
     print(f"✅ Loaded regional unemployment data ({len(regional_unemp)} rows)")
 except:
     print("⚠️  Could not find regional_unemployment.csv")
     raise
 
 # ============================================================================
-# FIX: AGGREGATE UNEMPLOYMENT DATA BEFORE MERGE
+# MERGE DATA
 # ============================================================================
 
-print("\n[2] Preparing unemployment data...")
+print("\n[4] Merging transcripts with unemployment data...")
 
-# Create year-month for both datasets
-transcripts_df['year_month'] = transcripts_df['date'].dt.to_period('M')
+bank_presidents['year_month'] = bank_presidents['date'].dt.to_period('M')
 regional_unemp['year_month'] = regional_unemp['date'].dt.to_period('M')
 
-# **KEY FIX: Aggregate unemployment to one row per year_month × district**
-print(f"   Before aggregation: {len(regional_unemp)} unemployment rows")
-
-regional_unemp_agg = regional_unemp.groupby(['year_month', 'district']).agg({
-    'unemployment_rate': 'mean'  # Average unemployment for the month
-}).reset_index()
-
-print(f"   After aggregation: {len(regional_unemp_agg)} unemployment rows")
-print(f"   ✅ Aggregated to one row per year_month × district")
-
-# ============================================================================
-# MERGE WITH AGGREGATED DATA
-# ============================================================================
-
-print("\n[3] Merging transcripts with unemployment data...")
-
-df = pd.merge(
-    transcripts_df, 
-    regional_unemp_agg[['year_month', 'district', 'unemployment_rate']], 
-    on=['year_month', 'district'], 
+merged = pd.merge(
+    bank_presidents,
+    regional_unemp[['year_month', 'district', 'unemployment_rate']],
+    on=['year_month', 'district'],
     how='left'
 )
 
-print(f"\n📊 Merge results:")
-print(f"   Total rows after merge: {len(df)}")
-print(f"   Rows with unemployment_rate: {df['unemployment_rate'].notna().sum()}")
-print(f"   Missing unemployment_rate: {df['unemployment_rate'].isna().sum()}")
-
-if df['unemployment_rate'].notna().sum() > 0:
-    print(f"   Unemployment range: {df['unemployment_rate'].min():.1f}% to {df['unemployment_rate'].max():.1f}%")
-    print(f"   Mean unemployment: {df['unemployment_rate'].mean():.1f}%")
-
-bank_presidents = df.copy()
-
-print(f"\n✅ Working with {len(bank_presidents)} statements from Regional Bank Presidents")
-print(f"   Unique speakers: {bank_presidents['speaker'].nunique()}")
-print(f"   Date range: {bank_presidents['date'].min()} to {bank_presidents['date'].max()}")
+print(f"✅ Merge complete: {merged['unemployment_rate'].notna().sum()} rows with unemployment data")
 
 # ============================================================================
 # AGGREGATE TO SPEAKER-MEETING LEVEL
 # ============================================================================
 
-print("\n[4] Aggregating to speaker-meeting level...")
+print("\n[5] Aggregating to speaker-meeting level...")
 
-speaker_meeting = bank_presidents.groupby(['date', 'speaker', 'district']).agg({
-    'unemployment_discussion_score': 'mean',
-    'dissent_tone_score': 'mean',
+speaker_meeting = merged.groupby(['date', 'speaker_clean', 'district']).agg({
+    'disagreement_score': 'mean',
     'unemployment_rate': 'first',
     'text': 'count'
 }).reset_index()
 
-speaker_meeting.rename(columns={'text': 'num_turns'}, inplace=True)
+speaker_meeting.rename(columns={'text': 'num_turns', 'speaker_clean': 'speaker'}, inplace=True)
+
+# Add year variable
+speaker_meeting['year'] = speaker_meeting['date'].dt.year
 
 # Remove missing data
-analysis_df = speaker_meeting.dropna(subset=[
-    'unemployment_discussion_score',
-    'dissent_tone_score',
-    'unemployment_rate'
-]).copy()
+analysis_df = speaker_meeting.dropna(subset=['disagreement_score', 
+                                              'unemployment_rate']).copy()
 
 print(f"✅ {len(analysis_df)} speaker-meeting observations for analysis")
-print(f"   Date range: {analysis_df['date'].min()} to {analysis_df['date'].max()}")
+print(f"   Years: {analysis_df['year'].min()} to {analysis_df['year'].max()}")
+print(f"   Unique speakers: {analysis_df['speaker'].nunique()}")
+print(f"   Unique districts: {analysis_df['district'].nunique()}")
+
+print(f"\n📊 Dependent variable (disagreement_score):")
+print(f"   Mean: {analysis_df['disagreement_score'].mean():.4f}")
+print(f"   Std: {analysis_df['disagreement_score'].std():.4f}")
+print(f"   Range: {analysis_df['disagreement_score'].min():.4f} to {analysis_df['disagreement_score'].max():.4f}")
+
+print(f"\n📊 Independent variable (unemployment_rate):")
+print(f"   Mean: {analysis_df['unemployment_rate'].mean():.2f}%")
+print(f"   Std: {analysis_df['unemployment_rate'].std():.2f}%")
+print(f"   Range: {analysis_df['unemployment_rate'].min():.2f}% to {analysis_df['unemployment_rate'].max():.2f}%")
 
 # ============================================================================
-# CREATE REGIONS AND ERAS
-# ============================================================================
-
-print("\n[5] Creating categorical controls...")
-
-# Map districts to regions
-district_to_region = {
-    'Boston': 'East', 'New York': 'East', 'Philadelphia': 'East', 'Richmond': 'East',
-    'Cleveland': 'Central', 'Atlanta': 'Central', 'Chicago': 'Central', 'St. Louis': 'Central',
-    'Minneapolis': 'West', 'Kansas City': 'West', 'Dallas': 'West', 'San Francisco': 'West'
-}
-analysis_df['region'] = analysis_df['district'].map(district_to_region)
-
-# Create policy eras
-def get_era(date):
-    if date < pd.Timestamp('2008-09-15'):
-        return 'Pre-Crisis'
-    elif date < pd.Timestamp('2015-12-16'):
-        return 'Zero Lower Bound'
-    else:
-        return 'Normalization'
-
-analysis_df['era'] = analysis_df['date'].apply(get_era)
-analysis_df['year'] = analysis_df['date'].dt.year
-
-# National unemployment benchmark
-national_unemp = analysis_df.groupby('date')['unemployment_rate'].mean().reset_index()
-national_unemp.columns = ['date', 'national_unemployment']
-analysis_df = analysis_df.merge(national_unemp, on='date', how='left')
-analysis_df['unemp_deviation'] = analysis_df['unemployment_rate'] - analysis_df['national_unemployment']
-
-print(f"✅ Created regions ({analysis_df['region'].nunique()}) and eras ({analysis_df['era'].nunique()})")
-
-# ============================================================================
-# NAIVE ANALYSIS
+# REGRESSION ANALYSIS
 # ============================================================================
 
 print("\n" + "="*70)
-print("BASELINE: Naive Analysis (No Controls)")
+print("REGRESSION ANALYSIS")
+print("DV: disagreement_score | IV: district_unemployment_rate")
 print("="*70)
 
-X_naive = analysis_df[['unemployment_rate']]
-X_naive = sm.add_constant(X_naive)
-y_naive = analysis_df['unemployment_discussion_score']
+# ============================================================================
+# MODEL 1: NAIVE (NO CONTROLS)
+# ============================================================================
 
+print("\n[MODEL 1] Naive regression (no controls)")
+print("="*70)
+
+X_naive = sm.add_constant(analysis_df[['unemployment_rate']])
+y_naive = analysis_df['disagreement_score']
 model_naive = sm.OLS(y_naive, X_naive).fit(cov_type='HC1')
 
 print(f"\n{model_naive.summary()}")
 print(f"\nNaive Result:")
-print(f"   β = {model_naive.params['unemployment_rate']:.4f}")
+print(f"   β = {model_naive.params['unemployment_rate']:.6f}")
 print(f"   p-value = {model_naive.pvalues['unemployment_rate']:.4f}")
+print(f"   R² = {model_naive.rsquared:.3f}")
 
 # ============================================================================
-# FIXED EFFECTS REGRESSION
+# MODEL 2: SPEAKER FIXED EFFECTS ONLY
 # ============================================================================
 
 print("\n" + "="*70)
-print("METHOD 1: Fixed Effects Regression")
+print("[MODEL 2] Speaker Fixed Effects Only")
 print("="*70)
 
-fe_model = smf.ols(
-    'unemployment_discussion_score ~ unemployment_rate + C(region) + C(era)',
+speaker_fe_only = smf.ols(
+    'disagreement_score ~ unemployment_rate + C(speaker)',
     data=analysis_df
 ).fit(cov_type='cluster', cov_kwds={'groups': analysis_df['speaker']})
 
-print(f"\n{fe_model.summary()}")
-print(f"\nFixed Effects Result:")
-print(f"   β = {fe_model.params['unemployment_rate']:.4f}")
-print(f"   p-value = {fe_model.pvalues['unemployment_rate']:.4f}")
+print(f"\n{speaker_fe_only.summary()}")
+
+print(f"\nSpeaker FE Only Result:")
+print(f"   β = {speaker_fe_only.params['unemployment_rate']:.6f}")
+print(f"   p-value = {speaker_fe_only.pvalues['unemployment_rate']:.4f}")
+print(f"   R² = {speaker_fe_only.rsquared:.3f}")
 
 # ============================================================================
-# WITHIN-GROUP TRANSFORMATION
-# ============================================================================
-
-print("\n" + "="*70)
-print("METHOD 2: Within-Group Transformation")
-print("="*70)
-
-analysis_df['unemp_rate_within'] = analysis_df.groupby(['region', 'era'])['unemployment_rate'].transform(
-    lambda x: x - x.mean()
-)
-analysis_df['discussion_within'] = analysis_df.groupby(['region', 'era'])['unemployment_discussion_score'].transform(
-    lambda x: x - x.mean()
-)
-
-within_model = sm.OLS(
-    analysis_df['discussion_within'], 
-    sm.add_constant(analysis_df['unemp_rate_within'])
-).fit(cov_type='HC1')
-
-print(f"\n{within_model.summary()}")
-print(f"\nWithin-Group Result:")
-print(f"   β = {within_model.params['unemp_rate_within']:.4f}")
-print(f"   p-value = {within_model.pvalues['unemp_rate_within']:.4f}")
-
-# ============================================================================
-# ERA HETEROGENEITY (KEY FINDING)
+# MODEL 3: SPEAKER + YEAR FIXED EFFECTS ⭐ PREFERRED
 # ============================================================================
 
 print("\n" + "="*70)
-print("KEY FINDING: Effect Heterogeneity Across Eras")
+print("[MODEL 3] Speaker + Year Fixed Effects ⭐ PREFERRED")
+print("Following Bobrov et al. (2024) - adapted for feasibility")
 print("="*70)
 
-interaction_model = smf.ols(
-    'unemployment_discussion_score ~ unemployment_rate * C(era) + C(region)',
+print("\nThis specification asks:")
+print("  'Do bank presidents express MORE dissent when their district")
+print("   unemployment is HIGH, controlling for individual tendencies")
+print("   and common time shocks?'")
+
+speaker_year_fe = smf.ols(
+    'disagreement_score ~ unemployment_rate + C(speaker) + C(year)',
     data=analysis_df
 ).fit(cov_type='cluster', cov_kwds={'groups': analysis_df['speaker']})
 
-print(f"\n{interaction_model.summary()}")
+print(f"\n{speaker_year_fe.summary()}")
+
+print(f"\nSpeaker + Year FE Result:")
+print(f"   β = {speaker_year_fe.params['unemployment_rate']:.6f}")
+print(f"   p-value = {speaker_year_fe.pvalues['unemployment_rate']:.4f}")
+print(f"   R² = {speaker_year_fe.rsquared:.3f}")
+
+if speaker_year_fe.pvalues['unemployment_rate'] < 0.05:
+    print(f"\n   ✅ SIGNIFICANT at 5% level!")
+    if speaker_year_fe.params['unemployment_rate'] > 0:
+        print(f"   ✅ POSITIVE coefficient: Bank presidents express MORE dissent")
+        print(f"      when their district unemployment is higher.")
+    else:
+        print(f"   ⚠️  NEGATIVE coefficient: Bank presidents express LESS dissent")
+        print(f"      when their district unemployment is higher (counterintuitive)")
+elif speaker_year_fe.pvalues['unemployment_rate'] < 0.10:
+    print(f"\n   ⚡ MARGINALLY SIGNIFICANT at 10% level")
+    print(f"      Suggestive evidence of effect")
+else:
+    print(f"\n   ❌ Not significant at conventional levels")
+
+# ============================================================================
+# COMPARISON TABLE
+# ============================================================================
+
+print("\n" + "="*70)
+print("COMPARISON: All Specifications")
+print("="*70)
+
+comparison = pd.DataFrame({
+    'Model': [
+        'Naive (no controls)',
+        'Speaker FE only',
+        'Speaker + Year FE ⭐',
+    ],
+    'Coefficient': [
+        model_naive.params['unemployment_rate'],
+        speaker_fe_only.params['unemployment_rate'],
+        speaker_year_fe.params['unemployment_rate'],
+    ],
+    'Std Error': [
+        model_naive.bse['unemployment_rate'],
+        speaker_fe_only.bse['unemployment_rate'],
+        speaker_year_fe.bse['unemployment_rate'],
+    ],
+    'P-value': [
+        model_naive.pvalues['unemployment_rate'],
+        speaker_fe_only.pvalues['unemployment_rate'],
+        speaker_year_fe.pvalues['unemployment_rate'],
+    ],
+    'R-squared': [
+        model_naive.rsquared,
+        speaker_fe_only.rsquared,
+        speaker_year_fe.rsquared,
+    ]
+})
+
+def add_stars(p):
+    if p < 0.01:
+        return '***'
+    elif p < 0.05:
+        return '**'
+    elif p < 0.10:
+        return '*'
+    else:
+        return ''
+
+comparison['Sig'] = comparison['P-value'].apply(add_stars)
+print(f"\n{comparison.to_string(index=False)}")
+print("\nSignificance: *** p<0.01, ** p<0.05, * p<0.10")
+
+# ============================================================================
+# INTERPRETATION
+# ============================================================================
+
+print("\n" + "="*70)
+print("INTERPRETATION")
+print("="*70)
+
+print("\n📊 MAIN RESULT:")
+print(f"   Coefficient: {speaker_year_fe.params['unemployment_rate']:.6f}")
+print(f"   P-value: {speaker_year_fe.pvalues['unemployment_rate']:.4f}")
+
+if speaker_year_fe.pvalues['unemployment_rate'] < 0.10:
+    print("\n✅ EVIDENCE FOUND:")
+    print("   Within the same speaker, controlling for year effects,")
+    print("   a 1 percentage point increase in district unemployment")
+    print(f"   is associated with a {abs(speaker_year_fe.params['unemployment_rate']):.6f} change")
+    print("   in disagreement/dissent score.")
+    
+    # Calculate economic significance
+    score_std = analysis_df['disagreement_score'].std()
+    effect_size = speaker_year_fe.params['unemployment_rate'] / score_std
+    print(f"\n   Economic significance:")
+    print(f"   This is {abs(effect_size):.3f} standard deviations of disagreement score")
+    
+    # Example calculation
+    unemp_iqr = analysis_df['unemployment_rate'].quantile(0.75) - analysis_df['unemployment_rate'].quantile(0.25)
+    score_change = speaker_year_fe.params['unemployment_rate'] * unemp_iqr
+    print(f"\n   Example: Moving from 25th to 75th percentile of unemployment")
+    print(f"   (a {unemp_iqr:.1f} percentage point increase)")
+    print(f"   changes disagreement score by {abs(score_change):.6f}")
+    print(f"   ({abs(score_change/score_std):.2f} standard deviations)")
+else:
+    print("\n⚠️  NO SIGNIFICANT EVIDENCE:")
+    print("   Cannot reject null hypothesis that district unemployment")
+    print("   does not affect dissent expression.")
+
+# ============================================================================
+# ROBUSTNESS: Effect by era
+# ============================================================================
+
+print("\n" + "="*70)
+print("ROBUSTNESS: Effect by Era")
+print("="*70)
+
+def assign_era(year):
+    if year <= 2007:
+        return 'Pre-Crisis'
+    elif year <= 2013:
+        return 'Crisis/ZLB'
+    else:
+        return 'Recovery'
+
+analysis_df['era'] = analysis_df['year'].apply(assign_era)
+
+print("\nSplit sample by era:")
+for era in ['Pre-Crisis', 'Crisis/ZLB', 'Recovery']:
+    era_df = analysis_df[analysis_df['era'] == era]
+    if len(era_df) > 50:
+        try:
+            era_model = smf.ols(
+                'disagreement_score ~ unemployment_rate + C(speaker)',
+                data=era_df
+            ).fit(cov_type='cluster', cov_kwds={'groups': era_df['speaker']})
+            
+            sig = add_stars(era_model.pvalues['unemployment_rate'])
+            print(f"\n{era} ({era_df['year'].min()}-{era_df['year'].max()}):")
+            print(f"   N = {len(era_df)}")
+            print(f"   β = {era_model.params['unemployment_rate']:.6f}")
+            print(f"   p = {era_model.pvalues['unemployment_rate']:.4f} {sig}")
+        except:
+            print(f"\n{era}: Insufficient variation for estimation")
 
 # ============================================================================
 # SAVE RESULTS
@@ -339,31 +389,40 @@ print(f"\n{interaction_model.summary()}")
 
 print("\n[6] Saving results...")
 
-analysis_df.to_csv(f'{OUTPUT_DIR}/regional_unemployment_analysis.csv', index=False)
-print(f"💾 Saved analysis data")
+analysis_df.to_csv(f'{OUTPUT_DIR}/dissent_analysis_data.csv', index=False)
+print(f"💾 Saved: {OUTPUT_DIR}/dissent_analysis_data.csv")
 
-# Save regression results
-with open(f'{OUTPUT_DIR}/regression_results.txt', 'w') as f:
-    f.write("NAIVE MODEL\n")
+with open(f'{OUTPUT_DIR}/dissent_regression_results.txt', 'w') as f:
     f.write("="*70 + "\n")
-    f.write(str(model_naive.summary()) + "\n\n")
+    f.write("REGIONAL UNEMPLOYMENT AND DISSENT ANALYSIS\n")
+    f.write("DV: disagreement_score | IV: district_unemployment_rate\n")
+    f.write("="*70 + "\n\n")
     
-    f.write("FIXED EFFECTS MODEL\n")
-    f.write("="*70 + "\n")
-    f.write(str(fe_model.summary()) + "\n\n")
+    f.write("MODEL 1: NAIVE\n")
+    f.write(str(model_naive.summary()))
+    f.write("\n\n")
     
-    f.write("WITHIN-GROUP MODEL\n")
-    f.write("="*70 + "\n")
-    f.write(str(within_model.summary()) + "\n\n")
+    f.write("MODEL 2: SPEAKER FE ONLY\n")
+    f.write(str(speaker_fe_only.summary()))
+    f.write("\n\n")
     
-    f.write("INTERACTION MODEL\n")
-    f.write("="*70 + "\n")
-    f.write(str(interaction_model.summary()) + "\n\n")
+    f.write("MODEL 3: SPEAKER + YEAR FE (PREFERRED)\n")
+    f.write(str(speaker_year_fe.summary()))
+    f.write("\n\n")
+    
+    f.write("COMPARISON TABLE:\n")
+    f.write(comparison.to_string(index=False))
 
-print(f"💾 Saved regression results")
+print(f"💾 Saved: {OUTPUT_DIR}/dissent_regression_results.txt")
+
+comparison.to_csv(f'{OUTPUT_DIR}/dissent_comparison_table.csv', index=False)
+print(f"💾 Saved: {OUTPUT_DIR}/dissent_comparison_table.csv")
 
 print("\n" + "="*70)
 print("✅ ANALYSIS COMPLETE!")
 print("="*70)
-print(f"\nKey finding: Relationship between unemployment and discussion")
-print(f"varies across policy eras (regime-dependent effect)")
+
+print(f"\n📁 All results saved to: {OUTPUT_DIR}/")
+print(f"\n🎓 Research Question: Do bank presidents from high-unemployment")
+print(f"   districts express more dissent in FOMC meetings?")
+print(f"\n   Main Result: β = {speaker_year_fe.params['unemployment_rate']:.6f}, p = {speaker_year_fe.pvalues['unemployment_rate']:.4f}")
