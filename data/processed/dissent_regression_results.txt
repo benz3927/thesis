@@ -1,0 +1,146 @@
+======================================================================
+REGIONAL UNEMPLOYMENT AND DISSENT ANALYSIS
+DV: disagreement_score | IV: district_unemployment_rate
+======================================================================
+
+MODEL 1: NAIVE
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:     disagreement_score   R-squared:                       0.000
+Model:                            OLS   Adj. R-squared:                 -0.001
+Method:                 Least Squares   F-statistic:                    0.4293
+Date:                Mon, 05 Jan 2026   Prob (F-statistic):              0.512
+Time:                        19:22:14   Log-Likelihood:                 2342.4
+No. Observations:                1120   AIC:                            -4681.
+Df Residuals:                    1118   BIC:                            -4671.
+Df Model:                           1                                         
+Covariance Type:                  HC1                                         
+=====================================================================================
+                        coef    std err          z      P>|z|      [0.025      0.975]
+-------------------------------------------------------------------------------------
+const                 0.2727      0.003     88.993      0.000       0.267       0.279
+unemployment_rate     0.0003      0.000      0.655      0.512      -0.001       0.001
+==============================================================================
+Omnibus:                        9.306   Durbin-Watson:                   1.842
+Prob(Omnibus):                  0.010   Jarque-Bera (JB):                8.342
+Skew:                           0.157   Prob(JB):                       0.0154
+Kurtosis:                       2.717   Cond. No.                         24.1
+==============================================================================
+
+Notes:
+[1] Standard Errors are heteroscedasticity robust (HC1)
+
+MODEL 2: SPEAKER FE ONLY
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:     disagreement_score   R-squared:                       0.305
+Model:                            OLS   Adj. R-squared:                  0.290
+Method:                 Least Squares   F-statistic:                     20.38
+Date:                Mon, 05 Jan 2026   Prob (F-statistic):           0.000172
+Time:                        19:22:14   Log-Likelihood:                 2545.8
+No. Observations:                1120   AIC:                            -5044.
+Df Residuals:                    1096   BIC:                            -4923.
+Df Model:                          23                                         
+Covariance Type:              cluster                                         
+==============================================================================================
+                                 coef    std err          z      P>|z|      [0.025      0.975]
+----------------------------------------------------------------------------------------------
+Intercept                      0.2662      0.005     56.715      0.000       0.257       0.275
+C(speaker)[T.DUDLEY]          -0.0235      0.000   -134.210      0.000      -0.024      -0.023
+C(speaker)[T.EVANS]            0.0042   8.25e-05     51.104      0.000       0.004       0.004
+C(speaker)[T.FISHER]          -0.0090   3.67e-05   -243.983      0.000      -0.009      -0.009
+C(speaker)[T.GEITHNER]         0.0090      0.001      6.431      0.000       0.006       0.012
+C(speaker)[T.GEORGE]           0.0151      0.000     87.399      0.000       0.015       0.015
+C(speaker)[T.GUYNN]            0.0278      0.002     18.454      0.000       0.025       0.031
+C(speaker)[T.HOENIG]           0.0184      0.000     44.617      0.000       0.018       0.019
+C(speaker)[T.KASHKARI]         0.0013      0.002      0.703      0.482      -0.002       0.005
+C(speaker)[T.KOCHERLAKOTA]     0.0047      0.001      8.085      0.000       0.004       0.006
+C(speaker)[T.LACKER]          -0.0114      0.000    -63.336      0.000      -0.012      -0.011
+C(speaker)[T.LOCKHART]         0.0201   5.14e-06   3920.683      0.000       0.020       0.020
+C(speaker)[T.MESTER]           0.0205      0.001     28.181      0.000       0.019       0.022
+C(speaker)[T.MINEHAN]         -0.0108      0.002     -7.067      0.000      -0.014      -0.008
+C(speaker)[T.MOSKOW]          -0.0064      0.002     -4.080      0.000      -0.010      -0.003
+C(speaker)[T.PIANALTO]         0.0380      0.000    372.332      0.000       0.038       0.038
+C(speaker)[T.PLOSSER]          0.0107   8.74e-05    122.022      0.000       0.010       0.011
+C(speaker)[T.POOLE]           -0.0056      0.002     -3.693      0.000      -0.009      -0.003
+C(speaker)[T.ROSENGREN]        0.0091      0.000     84.661      0.000       0.009       0.009
+C(speaker)[T.SANTOMERO]        0.0152      0.003      5.905      0.000       0.010       0.020
+C(speaker)[T.STERN]            0.0224      0.001     23.690      0.000       0.021       0.024
+C(speaker)[T.WILLIAMS]        -0.0004      0.000     -1.878      0.060      -0.001    1.64e-05
+C(speaker)[T.YELLEN]           0.0359      0.000    270.939      0.000       0.036       0.036
+unemployment_rate              0.0002      0.001      0.339      0.735      -0.001       0.002
+==============================================================================
+Omnibus:                        7.784   Durbin-Watson:                   1.784
+Prob(Omnibus):                  0.020   Jarque-Bera (JB):                7.699
+Skew:                           0.194   Prob(JB):                       0.0213
+Kurtosis:                       3.123   Cond. No.                         245.
+==============================================================================
+
+Notes:
+[1] Standard Errors are robust to cluster correlation (cluster)
+
+MODEL 3: SPEAKER + YEAR FE (PREFERRED)
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:     disagreement_score   R-squared:                       0.344
+Model:                            OLS   Adj. R-squared:                  0.324
+Method:                 Least Squares   F-statistic:                     17.20
+Date:                Mon, 05 Jan 2026   Prob (F-statistic):           1.82e-08
+Time:                        19:22:14   Log-Likelihood:                 2578.6
+No. Observations:                1120   AIC:                            -5087.
+Df Residuals:                    1085   BIC:                            -4911.
+Df Model:                          34                                         
+Covariance Type:              cluster                                         
+==============================================================================================
+                                 coef    std err          z      P>|z|      [0.025      0.975]
+----------------------------------------------------------------------------------------------
+Intercept                      0.2680      0.005     49.073      0.000       0.257       0.279
+C(speaker)[T.DUDLEY]          -0.0235      0.001    -41.591      0.000      -0.025      -0.022
+C(speaker)[T.EVANS]            0.0042      0.000     14.501      0.000       0.004       0.005
+C(speaker)[T.FISHER]          -0.0099      0.002     -6.149      0.000      -0.013      -0.007
+C(speaker)[T.GEITHNER]         0.0081      0.004      1.957      0.050   -1.25e-05       0.016
+C(speaker)[T.GEORGE]           0.0143      0.001     13.464      0.000       0.012       0.016
+C(speaker)[T.GUYNN]            0.0255      0.004      5.842      0.000       0.017       0.034
+C(speaker)[T.HOENIG]           0.0188      0.003      7.482      0.000       0.014       0.024
+C(speaker)[T.KASHKARI]         0.0040      0.004      1.075      0.282      -0.003       0.011
+C(speaker)[T.KOCHERLAKOTA]     0.0023      0.001      2.108      0.035       0.000       0.004
+C(speaker)[T.LACKER]          -0.0122      0.001    -12.358      0.000      -0.014      -0.010
+C(speaker)[T.LOCKHART]         0.0192      0.001     23.293      0.000       0.018       0.021
+C(speaker)[T.MESTER]           0.0231      0.002     12.268      0.000       0.019       0.027
+C(speaker)[T.MINEHAN]         -0.0126      0.004     -2.979      0.003      -0.021      -0.004
+C(speaker)[T.MOSKOW]          -0.0081      0.004     -1.917      0.055      -0.016       0.000
+C(speaker)[T.PIANALTO]         0.0367      0.002     20.623      0.000       0.033       0.040
+C(speaker)[T.PLOSSER]          0.0097      0.002      6.350      0.000       0.007       0.013
+C(speaker)[T.POOLE]           -0.0070      0.004     -1.638      0.101      -0.015       0.001
+C(speaker)[T.ROSENGREN]        0.0091      0.000     26.112      0.000       0.008       0.010
+C(speaker)[T.SANTOMERO]        0.0131      0.005      2.852      0.004       0.004       0.022
+C(speaker)[T.STERN]            0.0237      0.003      6.914      0.000       0.017       0.030
+C(speaker)[T.WILLIAMS]        -0.0010      0.001     -1.018      0.309      -0.003       0.001
+C(speaker)[T.YELLEN]           0.0342      0.002     19.049      0.000       0.031       0.038
+C(year)[T.2007]               -0.0014      0.004     -0.335      0.737      -0.010       0.007
+C(year)[T.2008]               -0.0030      0.005     -0.574      0.566      -0.013       0.007
+C(year)[T.2009]               -0.0139      0.006     -2.435      0.015      -0.025      -0.003
+C(year)[T.2010]                0.0053      0.005      0.995      0.320      -0.005       0.016
+C(year)[T.2011]               -0.0035      0.005     -0.700      0.484      -0.013       0.006
+C(year)[T.2012]                0.0025      0.004      0.566      0.572      -0.006       0.011
+C(year)[T.2013]                0.0086      0.005      1.775      0.076      -0.001       0.018
+C(year)[T.2014]               -0.0064      0.005     -1.394      0.163      -0.015       0.003
+C(year)[T.2015]               -0.0041      0.006     -0.740      0.459      -0.015       0.007
+C(year)[T.2016]                0.0009      0.007      0.127      0.899      -0.013       0.014
+C(year)[T.2017]               -0.0107      0.007     -1.568      0.117      -0.024       0.003
+unemployment_rate              0.0003      0.001      0.553      0.580      -0.001       0.001
+==============================================================================
+Omnibus:                        5.836   Durbin-Watson:                   1.887
+Prob(Omnibus):                  0.054   Jarque-Bera (JB):                5.719
+Skew:                           0.168   Prob(JB):                       0.0573
+Kurtosis:                       3.101   Cond. No.                         248.
+==============================================================================
+
+Notes:
+[1] Standard Errors are robust to cluster correlation (cluster)
+
+COMPARISON TABLE:
+              Model  Coefficient  Std Error  P-value  R-squared Sig
+Naive (no controls)     0.000274   0.000417 0.512325   0.000394    
+    Speaker FE only     0.000221   0.000654 0.734773   0.304751    
+Speaker + Year FE ⭐     0.000303   0.000547 0.579986   0.344308    
