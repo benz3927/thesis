@@ -7,8 +7,8 @@ NAIVE MODEL
 Dep. Variable:     unemployment_discussion_score   R-squared:                       0.006
 Model:                                       OLS   Adj. R-squared:                  0.005
 Method:                            Least Squares   F-statistic:                     6.301
-Date:                           Thu, 01 Jan 2026   Prob (F-statistic):             0.0122
-Time:                                   21:43:32   Log-Likelihood:                 1692.9
+Date:                           Mon, 05 Jan 2026   Prob (F-statistic):             0.0122
+Time:                                   13:48:23   Log-Likelihood:                 1692.9
 No. Observations:                           1075   AIC:                            -3382.
 Df Residuals:                               1073   BIC:                            -3372.
 Df Model:                                      1                                         
@@ -37,8 +37,8 @@ FIXED_EFFECTS MODEL
 Dep. Variable:     unemployment_discussion_score   R-squared:                       0.041
 Model:                                       OLS   Adj. R-squared:                  0.036
 Method:                            Least Squares   F-statistic:                     5.620
-Date:                           Thu, 01 Jan 2026   Prob (F-statistic):            0.00158
-Time:                                   21:43:32   Log-Likelihood:                 1712.2
+Date:                           Mon, 05 Jan 2026   Prob (F-statistic):            0.00158
+Time:                                   13:48:23   Log-Likelihood:                 1712.2
 No. Observations:                           1075   AIC:                            -3412.
 Df Residuals:                               1069   BIC:                            -3383.
 Df Model:                                      5                                         
@@ -71,8 +71,8 @@ WITHIN_GROUP MODEL
 Dep. Variable:      discussion_within   R-squared:                       0.002
 Model:                            OLS   Adj. R-squared:                  0.001
 Method:                 Least Squares   F-statistic:                     2.041
-Date:                Thu, 01 Jan 2026   Prob (F-statistic):              0.153
-Time:                        21:43:32   Log-Likelihood:                 1716.9
+Date:                Mon, 05 Jan 2026   Prob (F-statistic):              0.153
+Time:                        13:48:23   Log-Likelihood:                 1716.9
 No. Observations:                1075   AIC:                            -3430.
 Df Residuals:                    1073   BIC:                            -3420.
 Df Model:                           1                                         
@@ -101,8 +101,8 @@ DEVIATION MODEL
 Dep. Variable:     unemployment_discussion_score   R-squared:                       0.024
 Model:                                       OLS   Adj. R-squared:                  0.021
 Method:                            Least Squares   F-statistic:                     1.209
-Date:                           Thu, 01 Jan 2026   Prob (F-statistic):              0.329
-Time:                                   21:43:32   Log-Likelihood:                 1702.9
+Date:                           Mon, 05 Jan 2026   Prob (F-statistic):              0.329
+Time:                                   13:48:23   Log-Likelihood:                 1702.9
 No. Observations:                           1075   AIC:                            -3398.
 Df Residuals:                               1071   BIC:                            -3378.
 Df Model:                                      3                                         
@@ -136,8 +136,8 @@ YEAR_FE MODEL
 Dep. Variable:     unemployment_discussion_score   R-squared:                       0.068
 Model:                                       OLS   Adj. R-squared:                  0.056
 Method:                            Least Squares   F-statistic:                     44.69
-Date:                           Thu, 01 Jan 2026   Prob (F-statistic):           2.62e-13
-Time:                                   21:43:32   Log-Likelihood:                 1727.8
+Date:                           Mon, 05 Jan 2026   Prob (F-statistic):           2.62e-13
+Time:                                   13:48:23   Log-Likelihood:                 1727.8
 No. Observations:                           1075   AIC:                            -3426.
 Df Residuals:                               1060   BIC:                            -3351.
 Df Model:                                     14                                         
@@ -179,8 +179,8 @@ INTERACTION MODEL
 Dep. Variable:     unemployment_discussion_score   R-squared:                       0.046
 Model:                                       OLS   Adj. R-squared:                  0.039
 Method:                            Least Squares   F-statistic:                     14.61
-Date:                           Thu, 01 Jan 2026   Prob (F-statistic):           4.12e-07
-Time:                                   21:43:32   Log-Likelihood:                 1714.9
+Date:                           Mon, 05 Jan 2026   Prob (F-statistic):           4.12e-07
+Time:                                   13:48:23   Log-Likelihood:                 1714.9
 No. Observations:                           1075   AIC:                            -3414.
 Df Residuals:                               1067   BIC:                            -3374.
 Df Model:                                      7                                         
@@ -215,8 +215,8 @@ LPM_NAIVE MODEL
 Dep. Variable:             is_dissent   R-squared:                       0.002
 Model:                            OLS   Adj. R-squared:                  0.001
 Method:                 Least Squares   F-statistic:                     1.867
-Date:                Thu, 01 Jan 2026   Prob (F-statistic):              0.172
-Time:                        21:43:32   Log-Likelihood:                 994.83
+Date:                Mon, 05 Jan 2026   Prob (F-statistic):              0.172
+Time:                        13:48:23   Log-Likelihood:                 994.83
 No. Observations:                1075   AIC:                            -1986.
 Df Residuals:                    1073   BIC:                            -1976.
 Df Model:                           1                                         
@@ -245,8 +245,8 @@ LPM_CONTROLLED MODEL
 Dep. Variable:             is_dissent   R-squared:                       0.020
 Model:                            OLS   Adj. R-squared:                  0.016
 Method:                 Least Squares   F-statistic:                    0.8123
-Date:                Thu, 01 Jan 2026   Prob (F-statistic):              0.553
-Time:                        21:43:32   Log-Likelihood:                 1004.9
+Date:                Mon, 05 Jan 2026   Prob (F-statistic):              0.553
+Time:                        13:48:23   Log-Likelihood:                 1004.9
 No. Observations:                1075   AIC:                            -1998.
 Df Residuals:                    1069   BIC:                            -1968.
 Df Model:                           5                                         
@@ -279,8 +279,8 @@ LPM_INTERACTION MODEL
 Dep. Variable:             is_dissent   R-squared:                       0.021
 Model:                            OLS   Adj. R-squared:                  0.015
 Method:                 Least Squares   F-statistic:                     1.616
-Date:                Thu, 01 Jan 2026   Prob (F-statistic):              0.181
-Time:                        21:43:32   Log-Likelihood:                 1005.2
+Date:                Mon, 05 Jan 2026   Prob (F-statistic):              0.181
+Time:                        13:48:23   Log-Likelihood:                 1005.2
 No. Observations:                1075   AIC:                            -1994.
 Df Residuals:                    1067   BIC:                            -1955.
 Df Model:                           7                                         
