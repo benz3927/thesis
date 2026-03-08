@@ -11,8 +11,7 @@ Benjamin Zhao | Professor Ann Owen, Advisor | Hamilton College | May 2026
 This paper tests whether regional economic conditions show up more strongly in what Federal Reserve district presidents *say* than in how they *vote*. I use GPT-4o to score each district president's remarks in FOMC transcripts on a −10 (hawkish) to +10 (dovish) scale, then run Bobrov-style regressions relating these scores to district-level unemployment gaps.
 
 **Key findings:**
-- Speech scores respond to regional unemployment with a standardized effect ~1.9x larger than votes (β = +0.494 vs +0.018)
-- The speech effect is significant at p = 0.036; the vote effect is only marginally significant at p = 0.051
+- Speech scores respond significantly to regional unemployment gaps (β = +0.494, p = 0.036), while the vote effect is only marginal (β = +0.018, p = 0.051)
 - Interaction coefficients are consistently positive across all four scoring versions, suggesting the effect strengthened after Greenspan's departure (2006)
 - Results are robust across 4 scoring versions (GPT v3, v7, v8, Claude Sonnet)
 
@@ -51,7 +50,7 @@ Data files are not included in this repository due to size. Raw transcripts are 
 | Script | Description |
 |--------|-------------|
 | `get_transcripts.py` | Download and parse FOMC transcript PDFs |
-| `get_unemployment.py` | Build district-level unemployment from county BLS data |
+| `get_unemployment.py` | Build district-level unemployment from county BLS LAUS data |
 | `examples.py` | Extract scored transcript excerpts for Appendix D |
 
 ### Transcript Processing (Professor Owen)
