@@ -1,56 +1,38 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Thu Apr 27 16:10:41 2023
+Convert 2019-2020 FOMC PDF transcripts to HTML
+"""
 
-@author: m1dcs04
-"""
 import os
-from datetime import datetime, date
-from bs4 import BeautifulSoup, NavigableString, Tag
-from selenium import webdriver
-import requests
-import pandas as pd
-from tqdm import tqdm
-import re
-import string
-import numpy as np
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import time
-from selenium.common.exceptions import TimeoutException
 import glob
 import pdftotree
 
+PDF_DIR = 'data/pdfs'
+HTML_DIR = 'fomc_transcript/htmls'
 
-# Parent path
-#Friday, January 17 - Make sure filepaths point here...
-#We're not using spire anymore...
-parent_path = 'fomc_transcript/'
-pdf_path = 'fomc_transcript/pdfs/'
-html_path = 'fomc_transcript/htmls/'
+os.makedirs(HTML_DIR, exist_ok=True)
 
+# Get 2019-2020 PDFs only
+pdf_files = glob.glob(f'{PDF_DIR}/FOMC201*.pdf') + glob.glob(f'{PDF_DIR}/FOMC202*.pdf')
+print(f"Found {len(pdf_files)} PDFs to convert")
 
-# PDF directory
-pdfs_ls = r'fomc_transcript/pdfs/*.pdf'
-
-os.chdir('fomc_transcript/htmls/')
-files = glob.glob(pdfs_ls)
-
-for i in np.arange(0,len(files),1):
-    html_road = html_path + files[i][41:50] + ".html"
-    pdftotree.parse(files[i], html_path = html_road)
+for pdf_file in pdf_files:
+    # Extract date: FOMC20190130meeting.pdf -> 20190130
+    filename = os.path.basename(pdf_file)
+    date_str = filename[4:12]
     
-
-# Conference Call directory
-#ccall_ls = r'fomc_transcript/conferencecall/*.pdf'
-
-#os.chdir('fomc_transcript/conferencecall/htmls/')
-#ccall_path = 'fomc_transcript/conferencecall/htmls/'
-#files = glob.glob(ccall_ls)
-
-#for i in np.arange(0,len(files),1):
-    #html_road = ccall_path + files[i][56:68] + ".html"
-    #pdftotree.parse(files[i], html_path = html_road)
+    html_output = f"{HTML_DIR}/{date_str}.html"
     
+    if os.path.exists(html_output):
+        print(f"  ✓ Already exists: {date_str}")
+        continue
+    
+    print(f"  Converting: {date_str}...", end=" ")
+    try:
+        pdftotree.parse(pdf_file, html_path=html_output)
+        print("✓")
+    except Exception as e:
+        print(f"✗ Error: {e}")
+
+print("\n✅ Done converting PDFs to HTML!")
+print(f"Now run your HTML parser script to create CSVs.")

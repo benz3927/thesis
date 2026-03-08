@@ -1,0 +1,7 @@
+Variable,N,Mean,SD,Min,Max
+GPT Speech Score (v8),2640,-0.343,2.875,-9.0,10.0
+Claude Speech Score,2639,-0.363,2.87,-8.0,8.0
+Vote Direction (-1/0/+1),2640,-0.023,0.192,-1.0,1.0
+Unemployment Gap (pp),2640,0.003,0.849,-4.608,4.093
+Dist. Unemployment Rate (%),2640,5.574,1.925,2.676,17.958
+Post-2006 Indicator,2640,0.553,0.497,0.0,1.0
