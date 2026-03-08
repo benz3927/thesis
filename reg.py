@@ -144,8 +144,14 @@ print(f"    Meetings: {merged['meeting_id'].nunique()}")
 print(f"\n    Vote distribution:")
 print(f"    {merged['vote_direction'].value_counts().sort_index().to_dict()}")
 
+# Pre/post subsamples
+pre  = merged[merged['post_2006'] == 0].copy()
+post = merged[merged['post_2006'] == 1].copy()
+print(f"\n    Greenspan (pre-2006):  N = {len(pre)}")
+print(f"    Post-Greenspan (2006+): N = {len(post)}")
+
 # ============================================================================
-# BUILD DESIGN MATRICES
+# BUILD DESIGN MATRICES (full sample)
 # ============================================================================
 
 print("\n[3] Building design matrices...")
@@ -189,24 +195,31 @@ def sig_stars(p):
     elif p < 0.10: return "†"
     else: return ""
 
-def run_interaction(y_var, X, merged):
+def run_interaction(y_var, X, data):
     """Run interaction spec, return (b0, p0, b1, p1, r2)"""
-    y = merged[y_var].dropna()
+    y = data[y_var].dropna()
     X_sub = X.loc[y.index]
-    m = sm.OLS(y, X_sub).fit(cov_type='cluster', cov_kwds={'groups': merged.loc[y.index, 'speaker']})
+    m = sm.OLS(y, X_sub).fit(cov_type='cluster', cov_kwds={'groups': data.loc[y.index, 'speaker']})
     b0, p0 = m.params['unemployment_gap'], m.pvalues['unemployment_gap']
     b1, p1 = m.params['unemp_gap_x_post'], m.pvalues['unemp_gap_x_post']
     return b0, p0, b1, p1, m.rsquared
 
-def run_simple(y_var, X, merged):
+def run_simple(y_var, X, data):
     """Run simple spec, return (b, se, p, r2)"""
-    y = merged[y_var].dropna()
+    y = data[y_var].dropna()
     X_sub = X.loc[y.index]
-    m = sm.OLS(y, X_sub).fit(cov_type='cluster', cov_kwds={'groups': merged.loc[y.index, 'speaker']})
+    m = sm.OLS(y, X_sub).fit(cov_type='cluster', cov_kwds={'groups': data.loc[y.index, 'speaker']})
     b = m.params['unemployment_gap']
     se = m.bse['unemployment_gap']
     p = m.pvalues['unemployment_gap']
     return b, se, p, m.rsquared
+
+def build_subsample_matrices(sub):
+    """Build speaker FE + meeting FE matrices for a subsample."""
+    spk = pd.get_dummies(sub['speaker'], prefix='spk', drop_first=True, dtype=float)
+    mtg = pd.get_dummies(sub['meeting_id'], prefix='mtg', drop_first=True, dtype=float)
+    X = pd.concat([sub[['unemployment_gap']], spk, mtg], axis=1)
+    return sm.add_constant(X)
 
 # ============================================================================
 # [4] NO FE BASELINE
@@ -285,11 +298,41 @@ for y_var, label in outcomes:
     simple_results.append({'label': label, 'b': b, 'se': se, 'p': p, 'r2': r2})
 
 # ============================================================================
-# [7] SUMMARY
+# [7] PRE / POST GREENSPAN SUBSAMPLES (Speaker FE + Meeting FE)
 # ============================================================================
 
 print("\n" + "="*70)
-print("[7] SUMMARY")
+print("[7] SUBSAMPLE: GREENSPAN ERA (pre-2006) vs POST-GREENSPAN (2006+)")
+print("    Full Bobrov spec within each era, Speaker FE + Meeting FE")
+print("="*70)
+
+X_pre  = build_subsample_matrices(pre)
+X_post = build_subsample_matrices(post)
+
+pre_results  = []
+post_results = []
+
+print(f"\n  {'Outcome':<16} {'β_pre':>10} {'SE_pre':>8} {'p_pre':>8}   {'β_post':>10} {'SE_post':>8} {'p_post':>8}")
+print(f"  {'-'*74}")
+
+for y_var, label in outcomes:
+    b_pre,  se_pre,  p_pre,  _ = run_simple(y_var, X_pre,  pre)
+    b_post, se_post, p_post, _ = run_simple(y_var, X_post, post)
+    print(f"  {label:<16} {b_pre:>+10.4f} {se_pre:>8.4f} {p_pre:>8.4f}{sig_stars(p_pre):<3}"
+          f"   {b_post:>+10.4f} {se_post:>8.4f} {p_post:>8.4f}{sig_stars(p_post)}")
+    pre_results.append({'label': label, 'b': b_pre,  'se': se_pre,  'p': p_pre})
+    post_results.append({'label': label, 'b': b_post, 'se': se_post, 'p': p_post})
+
+print(f"\n  N (Greenspan): {len(pre)}   N (Post-Greenspan): {len(post)}")
+print(f"\n  ⚠  Use these p-values (not the interaction β₁) when claiming")
+print(f"     significance within a specific era in the text.")
+
+# ============================================================================
+# [8] SUMMARY
+# ============================================================================
+
+print("\n" + "="*70)
+print("[8] SUMMARY")
 print("="*70)
 
 r = bobrov_results
@@ -324,6 +367,18 @@ print(f"""│                                                                   
 │  Note: Bobrov includes regional inflation; our CPI data is incomplete     │
 │  (missing St. Louis, Minneapolis). Results robust to inclusion where      │
 │  available.                                                                │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  ERA SUBSAMPLES: Speaker FE + Meeting FE within each era                  │
+├──────────────────┬────────────────────────────┬───────────────────────────┤
+│  Outcome         │  Greenspan (1994–2005)      │  Post-Greenspan (2006–20) │
+│                  │  β        SE      p         │  β        SE      p       │
+├──────────────────┼────────────────────────────┼───────────────────────────┤""")
+for pr, po in zip(pre_results, post_results):
+    print(f"│  {pr['label']:<16} │  {pr['b']:+.4f}  {pr['se']:.4f}  {pr['p']:.4f}{sig_stars(pr['p']):<3}  │  {po['b']:+.4f}  {po['se']:.4f}  {po['p']:.4f}{sig_stars(po['p']):<3}  │")
+print(f"""│                                                                            │
+│  N_pre = {len(pre)}, N_post = {len(post)}                                              │
 └────────────────────────────────────────────────────────────────────────────┘
 """)
 
