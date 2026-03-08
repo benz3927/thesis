@@ -28,7 +28,7 @@ This paper tests whether regional economic conditions show up more strongly in w
 
 - **FOMC Transcripts:** 216 meetings, 1994–2020 (parsed from Fed website PDFs)
 - **Dissent Votes:** Thornton & Wheelock (2014), extended through 2020
-- **Unemployment:** County-level BLS LAUS data, aggregated to Fed districts
+- **Unemployment:** County-level BLS Local Area Unemployment Statistics (LAUS) data, aggregated to Fed districts
 
 Data files are not included in this repository due to size. Raw transcripts are available from the [Federal Reserve](https://www.federalreserve.gov/monetarypolicy/fomc_historical.htm).
 
