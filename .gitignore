@@ -1,34 +1,8 @@
-# Ignore Python virtual environments
-.venv/
-env/
+data/pdfs/
+data/processed/
+data/cache/
+*.xlsx
 venv/
-.env
-
-# Ignore PyTorch binaries and build artifacts
-*.pt
-*.pth
-*.onnx
-*.pb
-*.dylib
-*.so
-*.dll
-*.pkl
-cache/
-RAG/cache/
-*.pdf
-
-# Ignore cache and temporary files
 __pycache__/
-*.py[cod]
-*.log
-*.tmp
-*.swp
-
-# Ignore Jupyter Notebook checkpoints
-.ipynb_checkpoints/
-
-# Ignore system-specific files
+*.pyc
 .DS_Store
-Thumbs.db
-.env
-.venv/ # if not already present
